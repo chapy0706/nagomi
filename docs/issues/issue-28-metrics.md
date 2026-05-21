@@ -1,3 +1,9 @@
+---
+status: open
+created_at: 2026-05-21
+closed_at:
+---
+
 # issue-28: 利用状況のメトリクス収集（Vercel Analytics等）
 
 ## 概要・背景・目的

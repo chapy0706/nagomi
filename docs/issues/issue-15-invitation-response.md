@@ -1,3 +1,9 @@
+---
+status: open
+created_at: 2026-05-21
+closed_at:
+---
+
 # issue-15: 招待の承諾・拒否・失効処理
 
 ## 概要・背景・目的

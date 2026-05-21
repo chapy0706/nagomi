@@ -9,7 +9,8 @@
 				"~/.ssh",
 				"~/.gnupg",
 				"~/.npmrc",
-				"~/.git-credentials"
+				"~/.git-credentials",
+				"~/.supabase"
 			]
 		},
 		"network": {
@@ -19,9 +20,15 @@
 				"codeload.github.com",
 				"*.githubusercontent.com",
 				"*.npmjs.org",
+				"registry.npmjs.org",
 				"registry.yarnpkg.com",
 				"nodejs.org",
-				"downloads.nodejs.org"
+				"downloads.nodejs.org",
+				"*.supabase.co",
+				"*.supabase.com",
+				"api.supabase.com",
+				"cdn.playwright.dev",
+				"playwright.download.prss.microsoft.com"
 			]
 		}
 	},
@@ -42,7 +49,10 @@
 			"Bash(git commit *)",
 			"Bash(pnpm add *)",
 			"Bash(pnpm dlx *)",
-			"Bash(docker *)"
+			"Bash(docker *)",
+			"Bash(make db/reset)",
+			"Bash(make db/seed)",
+			"Bash(pnpm supabase db reset *)"
 		],
 		"deny": [
 			"Bash(rm -rf *)",

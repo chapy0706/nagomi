@@ -1,3 +1,9 @@
+---
+status: open
+created_at: 2026-05-21
+closed_at:
+---
+
 # issue-05: 9桁社員IDによる認証フロー実装（擬似メール方式）
 
 ## 概要・背景・目的

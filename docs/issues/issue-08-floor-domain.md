@@ -1,3 +1,9 @@
+---
+status: open
+created_at: 2026-05-21
+closed_at:
+---
+
 # issue-08: フロア・部屋のドメインモデル実装
 
 ## 概要・背景・目的

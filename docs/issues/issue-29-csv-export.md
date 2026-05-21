@@ -1,3 +1,9 @@
+---
+status: open
+created_at: 2026-05-21
+closed_at:
+---
+
 # issue-29: 管理画面からのCSVエクスポート機能
 
 ## 概要・背景・目的

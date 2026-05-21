@@ -1,3 +1,9 @@
+---
+status: open
+created_at: 2026-05-21
+closed_at:
+---
+
 # issue-06: 初回ログイン時のPIN設定と利用同意フロー
 
 ## 概要・背景・目的

@@ -1,3 +1,9 @@
+---
+status: open
+created_at: 2026-05-21
+closed_at:
+---
+
 # issue-25: スマホ対応の磨き込み
 
 ## 概要・背景・目的

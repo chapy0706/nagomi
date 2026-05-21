@@ -1,3 +1,9 @@
+---
+status: open
+created_at: 2026-05-21
+closed_at:
+---
+
 # issue-03: Supabase プロジェクト初期化とローカル開発環境構築
 
 ## 概要・背景・目的
@@ -12,8 +18,8 @@ nagomi の永続化層・認証・リアルタイム同期はすべて Supabase 
 - [ ] Supabase クラウドの本番プロジェクトとステージングプロジェクトが作成されている
 - [ ] `supabase/config.toml` がリポジトリにコミットされている
 - [ ] `supabase/migrations/` ディレクトリが存在し、空のマイグレーションが1本通っている
-- [ ] `make db-migrate` でローカル Supabase にマイグレーションが適用できる
-- [ ] `make db-reset` でローカルDBがクリーンに戻る
+- [ ] `make db/up` でローカル Supabase にマイグレーションが適用できる
+- [ ] `make db/reset` でローカルDBがクリーンに戻る
 - [ ] `.env.example` に Supabase 関連の環境変数キーが記載されている
 - [ ] README の「セットアップ」セクションに従って、第三者がローカル起動できる
 - [ ] `make verify` がエラーを発生させない

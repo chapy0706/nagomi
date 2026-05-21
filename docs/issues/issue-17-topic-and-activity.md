@@ -1,3 +1,9 @@
+---
+status: open
+created_at: 2026-05-21
+closed_at:
+---
+
 # issue-17: トピック種別の選択と会話可視化
 
 ## 概要・背景・目的

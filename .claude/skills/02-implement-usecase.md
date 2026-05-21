@@ -1,115 +1,123 @@
 # Skill: UseCase の実装パターン
 
-このスキルは、go-attendance における UseCase の実装手順とパターンを定義します。
+このスキルは、nagomi における UseCase（Application 層）の実装手順とパターンを定義します。
 
 ---
 
 ## UseCase の責務
 
-- ドメインルールを適用してイベントを生成する
-- Port（Repository interface）を呼び出す
-- HTTP・DB・認証実装に依存しない
+- ドメインルールを適用して処理を進める
+- Port（Gateway / Repository interface）を呼び出す
+- HTTP・DB・認証・フレームワークの実装に依存しない
 - SQL を直接書かない
-- 副作用（DB 書き込み・外部呼び出し）を UseCase 内で完結させる
+- 副作用（DB 書き込み・外部呼び出し・Realtime 送信）を UseCase 内で完結させる
 
 ---
 
 ## ファイル配置
 
 ```
-apps/api/internal/
+src/
 ├── domain/
-│   └── attendance/
-│       ├── event.go          // イベント型定義
-│       └── policy.go         // ドメインルール
-├── usecase/
-│   └── attendance/
-│       └── clock_in.go       // UseCase 本体
-├── port/
-│   └── attendance_repository.go  // Repository interface
-└── adapter/
-    └── postgres/
-        └── attendance_repository.go  // Repository 実装
+│   ├── entities/
+│   │   └── Employee.ts
+│   ├── value-objects/
+│   │   └── EmployeeId.ts
+│   ├── errors.ts                 // ドメインエラー定義
+│   └── ports/
+│       ├── AuthGateway.ts        // Port（interface）
+│       ├── EmployeeRepository.ts
+│       └── Clock.ts
+├── application/
+│   └── use-cases/
+│       ├── AuthenticateEmployee.ts        // UseCase 本体
+│       └── AuthenticateEmployee.test.ts   // 単体テスト
+└── infrastructure/
+    └── supabase/
+        ├── SupabaseAuthGateway.ts         // Port の実装（Adapter）
+        └── SupabaseEmployeeRepository.ts
 ```
 
 ---
 
 ## 実装テンプレート
 
-### UseCase 本体（usecase/attendance/clock_in.go）
+### Port interface（domain/ports/AuthGateway.ts）
 
-```go
-package attendance
+interface は利用側（domain）に置きます。
 
-import (
-    "context"
-    "fmt"
+```ts
+import type { EmployeeId } from '../value-objects/EmployeeId'
 
-    "github.com/your-org/attendance-app/apps/api/internal/domain/attendance"
-    "github.com/your-org/attendance-app/apps/api/internal/port"
-)
-
-type ClockInInput struct {
-    UserID    string
-    RequestID string // Idempotency-Key
+export type Session = {
+  accessToken: string
+  authUserId: string
 }
 
-type ClockInOutput struct {
-    EventID string
-}
-
-type ClockInUseCase struct {
-    repo  port.AttendanceRepository
-    clock port.Clock
-}
-
-func NewClockInUseCase(repo port.AttendanceRepository, clock port.Clock) *ClockInUseCase {
-    return &ClockInUseCase{repo: repo, clock: clock}
-}
-
-func (uc *ClockInUseCase) Execute(ctx context.Context, in ClockInInput) (ClockInOutput, error) {
-    now := uc.clock.Now()
-
-    // 1. 重複チェック（業務ルール）
-    exists, err := uc.repo.HasActiveSession(ctx, in.UserID, now)
-    if err != nil {
-        return ClockInOutput{}, fmt.Errorf("ClockInUseCase: check active session: %w", err)
-    }
-    if exists {
-        return ClockInOutput{}, attendance.ErrAlreadyClockedIn
-    }
-
-    // 2. イベント生成（ドメイン層）
-    event := attendance.NewClockInEvent(in.UserID, now)
-
-    // 3. 永続化（Port 経由）
-    if err := uc.repo.AppendEvent(ctx, event); err != nil {
-        return ClockInOutput{}, fmt.Errorf("ClockInUseCase: append event: %w", err)
-    }
-
-    return ClockInOutput{EventID: event.ID}, nil
+export interface AuthGateway {
+  signIn(employeeId: EmployeeId, pin: string): Promise<Session | undefined>
+  signOut(): Promise<void>
 }
 ```
 
-### Port interface（port/attendance_repository.go）
+### Clock Port（domain/ports/Clock.ts）
 
-```go
-package port
+時刻は必ず Clock ポート経由で取得します。`new Date()` を直接呼ばないこと。
 
-import (
-    "context"
-    "time"
+```ts
+export interface Clock {
+  now(): Date
+}
+```
 
-    "github.com/your-org/attendance-app/apps/api/internal/domain/attendance"
-)
+### UseCase 本体（application/use-cases/AuthenticateEmployee.ts）
 
-type AttendanceRepository interface {
-    AppendEvent(ctx context.Context, event attendance.Event) error
-    HasActiveSession(ctx context.Context, userID string, at time.Time) (bool, error)
+```ts
+import { EmployeeId } from '../../domain/value-objects/EmployeeId'
+import type { AuthGateway } from '../../domain/ports/AuthGateway'
+import type { EmployeeRepository } from '../../domain/ports/EmployeeRepository'
+import { EmployeeNotActiveError, InvalidCredentialsError } from '../../domain/errors'
+
+export type AuthenticateEmployeeInput = {
+  rawEmployeeId: string
+  pin: string
 }
 
-type Clock interface {
-    Now() time.Time
+export type AuthenticateEmployeeOutput = {
+  employeeId: string
+  needsOnboarding: boolean
+}
+
+export class AuthenticateEmployee {
+  constructor(
+    private readonly auth: AuthGateway,
+    private readonly employees: EmployeeRepository,
+  ) {}
+
+  async execute(
+    input: AuthenticateEmployeeInput,
+  ): Promise<AuthenticateEmployeeOutput> {
+    // 1. 入力の検証（ドメイン層の値オブジェクト）
+    const employeeId = EmployeeId.create(input.rawEmployeeId)
+
+    // 2. ホワイトリストの有効性確認（Port 経由）
+    const employee = await this.employees.findActiveById(employeeId)
+    if (employee === undefined) {
+      throw new EmployeeNotActiveError(employeeId.value)
+    }
+
+    // 3. 認証（Port 経由・擬似メール変換は AuthGateway 実装側に閉じる）
+    const session = await this.auth.signIn(employeeId, input.pin)
+    if (session === undefined) {
+      throw new InvalidCredentialsError()
+    }
+
+    // 4. 初回ログイン判定
+    return {
+      employeeId: employeeId.value,
+      needsOnboarding: employee.consentAcceptedAt === undefined,
+    }
+  }
 }
 ```
 
@@ -117,67 +125,72 @@ type Clock interface {
 
 ## 実装ルール
 
-- UseCase の `Execute` メソッドのシグネチャは `(ctx context.Context, in XxxInput) (XxxOutput, error)` に統一する
-- エラーは `fmt.Errorf("UseCase名: %w", err)` でラップしてコンテキストを付ける
-- ドメインエラー（業務ルール違反）は `domain/attendance/errors.go` に定義する
-- DB トランザクションが必要な場合は Port に `WithTx` 相当のパターンで渡す
-- Idempotency-Key の確認は UseCase の冒頭で行う
+- UseCase クラスの公開メソッドは `execute(input: XxxInput): Promise<XxxOutput>` に統一する
+- 依存（Port）はコンストラクタ注入で受け取る。UseCase 内で具象を new しない
+- ドメインエラー（業務ルール違反）は `domain/errors.ts` に定義し、UseCase はそれを throw する
+- 時刻処理は Clock ポート経由にする
+- 複数テーブルを更新する場合は、トランザクション用の Port（Transactor）を経由する
+- ログ系の記録（在席・通話）は追記のみ。終了時刻の確定以外で UPDATE しない
 
 ---
 
-## テストテンプレート
+## テストテンプレート（Vitest + fake）
 
-```go
-package attendance_test
+Port は fake 実装でテストします。具象（Supabase）には依存させません。
 
-import (
-    "context"
-    "testing"
-    "time"
+```ts
+import { describe, it, expect } from 'vitest'
+import { AuthenticateEmployee } from './AuthenticateEmployee'
+import type { AuthGateway, Session } from '../../domain/ports/AuthGateway'
+import type { EmployeeRepository } from '../../domain/ports/EmployeeRepository'
+import type { EmployeeId } from '../../domain/value-objects/EmployeeId'
+import { EmployeeNotActiveError } from '../../domain/errors'
 
-    "github.com/stretchr/testify/assert"
-    "github.com/your-org/attendance-app/apps/api/internal/usecase/attendance"
-)
-
-type fakeRepo struct {
-    events        []domain.Event
-    hasActiveSession bool
+class FakeAuthGateway implements AuthGateway {
+  constructor(private readonly session: Session | undefined) {}
+  async signIn(): Promise<Session | undefined> {
+    return this.session
+  }
+  async signOut(): Promise<void> {}
 }
 
-func (r *fakeRepo) AppendEvent(_ context.Context, e domain.Event) error {
-    r.events = append(r.events, e)
-    return nil
+class FakeEmployeeRepository implements EmployeeRepository {
+  constructor(
+    private readonly employee:
+      | { consentAcceptedAt: Date | undefined }
+      | undefined,
+  ) {}
+  async findActiveById(_id: EmployeeId) {
+    return this.employee
+  }
 }
 
-func (r *fakeRepo) HasActiveSession(_ context.Context, _ string, _ time.Time) (bool, error) {
-    return r.hasActiveSession, nil
-}
+describe('AuthenticateEmployee', () => {
+  it('有効な社員が初回ログインのとき needsOnboarding が true', async () => {
+    const useCase = new AuthenticateEmployee(
+      new FakeAuthGateway({ accessToken: 't', authUserId: 'u' }),
+      new FakeEmployeeRepository({ consentAcceptedAt: undefined }),
+    )
 
-type fixedClock struct{ t time.Time }
-func (c fixedClock) Now() time.Time { return c.t }
-
-func TestClockIn_Success(t *testing.T) {
-    repo := &fakeRepo{}
-    uc := attendance.NewClockInUseCase(repo, fixedClock{t: time.Now()})
-
-    out, err := uc.Execute(context.Background(), attendance.ClockInInput{
-        UserID:    "user-1",
-        RequestID: "req-1",
+    const out = await useCase.execute({
+      rawEmployeeId: '123456789',
+      pin: '0000',
     })
 
-    assert.NoError(t, err)
-    assert.NotEmpty(t, out.EventID)
-    assert.Len(t, repo.events, 1)
-}
+    expect(out.needsOnboarding).toBe(true)
+  })
 
-func TestClockIn_AlreadyClockedIn(t *testing.T) {
-    repo := &fakeRepo{hasActiveSession: true}
-    uc := attendance.NewClockInUseCase(repo, fixedClock{t: time.Now()})
+  it('無効な社員のとき EmployeeNotActiveError を投げる', async () => {
+    const useCase = new AuthenticateEmployee(
+      new FakeAuthGateway(undefined),
+      new FakeEmployeeRepository(undefined),
+    )
 
-    _, err := uc.Execute(context.Background(), attendance.ClockInInput{UserID: "user-1"})
-
-    assert.ErrorIs(t, err, domain.ErrAlreadyClockedIn)
-}
+    await expect(
+      useCase.execute({ rawEmployeeId: '123456789', pin: '0000' }),
+    ).rejects.toBeInstanceOf(EmployeeNotActiveError)
+  })
+})
 ```
 
 ---
@@ -186,9 +199,10 @@ func TestClockIn_AlreadyClockedIn(t *testing.T) {
 
 実装後に以下を確認してください。
 
-- [ ] UseCase が HTTP / DB / 認証に直接依存していない
-- [ ] 時刻処理が Clock interface 経由になっている
-- [ ] エラーが適切にラップされている
-- [ ] 単体テストが追加されている
-- [ ] Projection を直接更新していない
+- [ ] UseCase が HTTP / DB / 認証 / フレームワークに直接依存していない
+- [ ] 依存（Port）をコンストラクタ注入で受け取っている
+- [ ] 時刻処理が Clock ポート経由になっている
+- [ ] ドメインエラーが `domain/errors.ts` に定義され、適切に throw されている
+- [ ] ログ系テーブルへの記録が追記のみになっている
+- [ ] 単体テストが追加されている（Port は fake で差し替え）
 - [ ] `make verify` が通る

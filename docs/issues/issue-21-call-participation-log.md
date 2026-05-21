@@ -1,3 +1,9 @@
+---
+status: open
+created_at: 2026-05-21
+closed_at:
+---
+
 # issue-21: 通話参加ログ記録（CallParticipationLog）
 
 ## 概要・背景・目的
@@ -12,6 +18,7 @@ Jitsi の videoConferenceJoined / videoConferenceLeft イベントを起点と�
 
 - [ ] `call_participation_logs` テーブルのマイグレーションが追加されている
 - [ ] `CallParticipationLog` エンティティが domain 層に実装されている
+- [ ] call_participation_logs は追記のみ。INSERT と、終了時刻（left_at）の確定 UPDATE のみを許す
 - [ ] RLS により、ユーザーは自分のレコードのみ SELECT 可能
 - [ ] `RecordCallJoin` ユースケースが実装されている
 - [ ] `RecordCallLeave` ユースケースが実装されている
@@ -24,6 +31,7 @@ Jitsi の videoConferenceJoined / videoConferenceLeft イベントを起点と�
 
 ## 技術的な検討事項
 
+- left_at の確定以外で行を書き換えない（追記のみログの原則）
 - 通話相手の情報は記録しない（プライバシー保護）
 - room_id は記録するが、会議室の物理的な特定よりも「同じルームに居た」という事実の集計に使う
 - 異常終了の補完バッチは別途実装（運用基盤側）

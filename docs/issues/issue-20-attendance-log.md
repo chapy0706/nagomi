@@ -1,3 +1,9 @@
+---
+status: open
+created_at: 2026-05-21
+closed_at:
+---
+
 # issue-20: 在席ログ記録（AttendanceLog）
 
 ## 概要・背景・目的
@@ -12,6 +18,7 @@ RLS で SELECT のみ許可し、UPDATE/DELETE は service_role のみとする�
 
 - [ ] `attendance_logs` テーブルのマイグレーションが追加されている
 - [ ] `AttendanceLog` エンティティが domain 層に実装されている
+- [ ] attendance_logs は追記のみ。INSERT と、終了時刻（logged_out_at）の確定 UPDATE のみを許す
 - [ ] RLS により、ユーザーは自分のレコードのみ SELECT 可能
 - [ ] RLS により、ユーザーは自分の INSERT のみ可能
 - [ ] UPDATE/DELETE は service_role のみ可能
@@ -24,6 +31,7 @@ RLS で SELECT のみ許可し、UPDATE/DELETE は service_role のみとする�
 
 ## 技術的な検討事項
 
+- logged_out_at の確定以外で行を書き換えない（追記のみログの原則）
 - presence の disconnect 検知は Supabase Edge Function で実装する
 - ネットワーク不安定での頻繁な切断・再接続をマージするロジックを入れる（5分以内の再接続は同一セッション扱い）
 - タブを閉じた・PCをスリープした等のケースも presence の disconnect で検知できる

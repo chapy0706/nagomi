@@ -1,3 +1,9 @@
+---
+status: open
+created_at: 2026-05-21
+closed_at:
+---
+
 # issue-04: 社員ホワイトリスト管理（employees テーブルとRLS）
 
 ## 概要・背景・目的
