@@ -1,6 +1,6 @@
 # nagomi
 
-派遣社員のための、業務終わり・休日にふらっと立ち寄れる2D仮想オフィス。
+正社員派遣のための、業務終わり・休日にふらっと立ち寄れる2D仮想オフィス。
 たまたま居合わせた誰かと声をかけ合うこと、ひとりで居てもいいことを、両方ゆるす場所をつくる。
 
 プロジェクト名の「nagomi」は「和み」から取った。協調と平等を体現したい、という設計思想そのものを名前にしている。
@@ -33,7 +33,7 @@
 
 ## プロダクトの背景と目的
 
-派遣社員には、正社員と比べて会社との接点が薄くなりがちな構造的な課題がある。
+正社員派遣には、正社員と比べて会社との接点が薄くなりがちな構造的な課題がある。
 雑談する人がいない、相談先がわからない、孤立を感じる。短期離職の背景には、技術的でない、こうした静かな理由が多い。
 
 nagomiは、業務終わりや休日に「ちょっと顔を出してみる」という選択肢をつくることを目指す。
@@ -129,35 +129,35 @@ nagomiは、業務終わりや休日に「ちょっと顔を出してみる」�
 
 ## 非機能要件
 
-| 観点 | 要件 |
-|---|---|
-| 想定同時接続 | 50人 |
-| デプロイコスト | 基本的に無料枠で運用可能 |
-| 対応デバイス | PC優先・スマホでも基本機能が使えること |
-| ブラウザ | モダンブラウザ最新2バージョン |
+| 観点             | 要件                                         |
+| ---------------- | -------------------------------------------- |
+| 想定同時接続     | 50人                                         |
+| デプロイコスト   | 基本的に無料枠で運用可能                     |
+| 対応デバイス     | PC優先・スマホでも基本機能が使えること       |
+| ブラウザ         | モダンブラウザ最新2バージョン                |
 | アクセシビリティ | キーボード操作・スクリーンリーダー対応を意識 |
-| 言語 | 日本語のみ（初期段階） |
+| 言語             | 日本語のみ（初期段階）                       |
 
 ## 技術スタック
 
-| 層 | 採用 | 理由 |
-|---|---|---|
-| 言語 | TypeScript | 型安全性・チーム開発の文書性 |
-| フレームワーク | Next.js (App Router) | RSC/Server Actionsで認証境界を構築しやすい |
-| UI | Tailwind CSS + shadcn/ui | デザインの一貫性・アクセシビリティ標準対応 |
-| 2D描画 | React DOM + CSS（必要に応じてPhaser.js検討） | 50人規模ならDOMで十分・必要なら段階的に置き換え |
-| 認証 | Supabase Auth | RLSと統合可能・JWT管理が標準化されている |
-| DB | Supabase Postgres + RLS | 行レベルセキュリティで認可をDB側に集約 |
-| リアルタイム | Supabase Realtime (Presence + Broadcast) | サーバ運用不要・無料枠で50人規模に到達可能 |
-| 通話 | Jitsi Meet (meet.jit.si を埋め込み) | 無料・ゲスト参加可能・人数制限ゆるい |
-| パッケージ管理 | pnpm（固定） | 高速・ディスク効率・モノレポ対応の余地 |
-| Lint/Format | Biome | ESLint + Prettierを統合・高速 |
-| ユニットテスト | Vitest | ESM・TypeScript親和性・Jest互換 |
-| E2Eテスト | Playwright | 複数ブラウザ・モバイルエミュレーション可能 |
-| タスクランナー | Make | デプロイ・マイグレーション含む全コマンドの一元化 |
-| CI/CD | GitHub Actions | OSSとの親和性・無料枠の充実 |
-| デプロイ | Vercel (Next.js) + Supabase | 設定で迷わない・無料枠が組み合わせやすい |
-| 監視 | Vercel Analytics + Supabase Logs | 初期段階は最小構成 |
+| 層             | 採用                                         | 理由                                             |
+| -------------- | -------------------------------------------- | ------------------------------------------------ |
+| 言語           | TypeScript                                   | 型安全性・チーム開発の文書性                     |
+| フレームワーク | Next.js (App Router)                         | RSC/Server Actionsで認証境界を構築しやすい       |
+| UI             | Tailwind CSS + shadcn/ui                     | デザインの一貫性・アクセシビリティ標準対応       |
+| 2D描画         | React DOM + CSS（必要に応じてPhaser.js検討） | 50人規模ならDOMで十分・必要なら段階的に置き換え  |
+| 認証           | Supabase Auth                                | RLSと統合可能・JWT管理が標準化されている         |
+| DB             | Supabase Postgres + RLS                      | 行レベルセキュリティで認可をDB側に集約           |
+| リアルタイム   | Supabase Realtime (Presence + Broadcast)     | サーバ運用不要・無料枠で50人規模に到達可能       |
+| 通話           | Jitsi Meet (meet.jit.si を埋め込み)          | 無料・ゲスト参加可能・人数制限ゆるい             |
+| パッケージ管理 | pnpm（固定）                                 | 高速・ディスク効率・モノレポ対応の余地           |
+| Lint/Format    | Biome                                        | ESLint + Prettierを統合・高速                    |
+| ユニットテスト | Vitest                                       | ESM・TypeScript親和性・Jest互換                  |
+| E2Eテスト      | Playwright                                   | 複数ブラウザ・モバイルエミュレーション可能       |
+| タスクランナー | Make                                         | デプロイ・マイグレーション含む全コマンドの一元化 |
+| CI/CD          | GitHub Actions                               | OSSとの親和性・無料枠の充実                      |
+| デプロイ       | Vercel (Next.js) + Supabase                  | 設定で迷わない・無料枠が組み合わせやすい         |
+| 監視           | Vercel Analytics + Supabase Logs             | 初期段階は最小構成                               |
 
 ## アーキテクチャ
 
@@ -186,42 +186,42 @@ Clean Architectureをベースにしつつ、規模に対して過剰になら�
 
 ### 主要エンティティ
 
-| エンティティ | 役割 |
-|---|---|
-| Employee | 社員。社員IDが本質的なアイデンティティ |
-| Avatar | フロア上の存在。Employee参照と位置・状態 |
-| Floor | 移動可能な空間。Avatarの集合を持つ |
-| Lounge | 雑談用の小スペース。CallSessionの母体 |
-| MeetingRoom | 会議室。予約と定員の概念を持つ |
-| CallSession | 通話セッション。トピック種別と参加者 |
-| CallInvitation | 通話招待。承諾/拒否/失効の状態を持つ |
-| AttendanceLog | 在席記録 |
-| CallParticipationLog | 通話参加記録 |
-| Report | 通報 |
-| Satisfaction | 満足度評価 |
+| エンティティ         | 役割                                     |
+| -------------------- | ---------------------------------------- |
+| Employee             | 社員。社員IDが本質的なアイデンティティ   |
+| Avatar               | フロア上の存在。Employee参照と位置・状態 |
+| Floor                | 移動可能な空間。Avatarの集合を持つ       |
+| Lounge               | 雑談用の小スペース。CallSessionの母体    |
+| MeetingRoom          | 会議室。予約と定員の概念を持つ           |
+| CallSession          | 通話セッション。トピック種別と参加者     |
+| CallInvitation       | 通話招待。承諾/拒否/失効の状態を持つ     |
+| AttendanceLog        | 在席記録                                 |
+| CallParticipationLog | 通話参加記録                             |
+| Report               | 通報                                     |
+| Satisfaction         | 満足度評価                               |
 
 ### 主要な値オブジェクト
 
-| 値オブジェクト | 制約 |
-|---|---|
-| EmployeeId | 9桁数値・チェックロジックを内包 |
-| Position | x, y座標・範囲チェック |
-| RoomCapacity | 定員の最小/最大ルール |
-| PresenceState | 手動ステータスと派生ステータスを分離して保持 |
-| CallTopic | available / counseling / casual のいずれか |
-| DisplayName | 1〜30文字・禁止文字チェック |
+| 値オブジェクト | 制約                                         |
+| -------------- | -------------------------------------------- |
+| EmployeeId     | 9桁数値・チェックロジックを内包              |
+| Position       | x, y座標・範囲チェック                       |
+| RoomCapacity   | 定員の最小/最大ルール                        |
+| PresenceState  | 手動ステータスと派生ステータスを分離して保持 |
+| CallTopic      | available / counseling / casual のいずれか   |
+| DisplayName    | 1〜30文字・禁止文字チェック                  |
 
 ### ポート（外界とのインターフェース）
 
-| ポート | 役割 |
-|---|---|
-| AuthGateway | サインイン・サインアウト・セッション取得 |
-| PresenceGateway | 在席状態と位置の同期 |
-| VideoRoomGateway | 通話ルームへの参加・退出 |
-| EmployeeRepository | 社員情報の取得・ホワイトリスト確認 |
-| AttendanceRepository | 在席ログの永続化 |
-| CallLogRepository | 通話ログの永続化 |
-| ReportGateway | 通報の送信 |
+| ポート               | 役割                                     |
+| -------------------- | ---------------------------------------- |
+| AuthGateway          | サインイン・サインアウト・セッション取得 |
+| PresenceGateway      | 在席状態と位置の同期                     |
+| VideoRoomGateway     | 通話ルームへの参加・退出                 |
+| EmployeeRepository   | 社員情報の取得・ホワイトリスト確認       |
+| AttendanceRepository | 在席ログの永続化                         |
+| CallLogRepository    | 通話ログの永続化                         |
+| ReportGateway        | 通報の送信                               |
 
 ## 主要ユースケース
 
@@ -430,13 +430,13 @@ CREATE TABLE satisfaction_responses (
 
 層ごとに役割を分けて、過不足なくテストを書く。
 
-| 層 | テスト種別 | 主なツール | 重点 |
-|---|---|---|---|
-| domain | ユニット | Vitest | ビジネスルール・値オブジェクトの不変条件 |
-| application | ユニット（モック） | Vitest | ユースケースの処理順序・分岐 |
-| infrastructure | 統合 | Vitest + Supabase Local | RLSポリシーの動作確認・SQL実行 |
-| presentation | コンポーネント | Vitest + Testing Library | ユーザー操作の流れ |
-| 全体 | E2E | Playwright | 主要シナリオ（ログイン〜通話開始〜ログアウト） |
+| 層             | テスト種別         | 主なツール               | 重点                                           |
+| -------------- | ------------------ | ------------------------ | ---------------------------------------------- |
+| domain         | ユニット           | Vitest                   | ビジネスルール・値オブジェクトの不変条件       |
+| application    | ユニット（モック） | Vitest                   | ユースケースの処理順序・分岐                   |
+| infrastructure | 統合               | Vitest + Supabase Local  | RLSポリシーの動作確認・SQL実行                 |
+| presentation   | コンポーネント     | Vitest + Testing Library | ユーザー操作の流れ                             |
+| 全体           | E2E                | Playwright               | 主要シナリオ（ログイン〜通話開始〜ログアウト） |
 
 ### Vitestの方針
 
@@ -461,16 +461,16 @@ CREATE TABLE satisfaction_responses (
 各フェーズの終わりにADR（Architecture Decision Record）を1〜2本書き残す。
 設計意図の言語化を継続的に行うことが、上流工程への足場になる。
 
-| Phase | ゴール | ドメインで触る範囲 |
-|---|---|---|
-| 1 | 認証 + フロア入室 + アバター固定表示 | Employee, EmployeeId, DisplayName |
-| 2 | アバター移動とpresence同期 | Position, PresenceState, PresenceGateway |
-| 3 | 招待ベースの通話開始（Jitsi接続） | CallInvitation, CallSession, VideoRoomGateway |
-| 4 | 会議室・ロビー・トピック種別 | MeetingRoom, RoomCapacity, CallTopic |
-| 5 | 通報・ブロック・利用同意 | Report, BlockRelation |
-| 6 | 勤怠ログ・通話ログの記録 | AttendanceLog, CallParticipationLog |
-| 7 | 管理者ダッシュボード・満足度測定 | Satisfaction, 集計ビュー |
-| 8 | チュートリアル・スマホ対応の磨き込み | UI最適化 |
+| Phase | ゴール                               | ドメインで触る範囲                            |
+| ----- | ------------------------------------ | --------------------------------------------- |
+| 1     | 認証 + フロア入室 + アバター固定表示 | Employee, EmployeeId, DisplayName             |
+| 2     | アバター移動とpresence同期           | Position, PresenceState, PresenceGateway      |
+| 3     | 招待ベースの通話開始（Jitsi接続）    | CallInvitation, CallSession, VideoRoomGateway |
+| 4     | 会議室・ロビー・トピック種別         | MeetingRoom, RoomCapacity, CallTopic          |
+| 5     | 通報・ブロック・利用同意             | Report, BlockRelation                         |
+| 6     | 勤怠ログ・通話ログの記録             | AttendanceLog, CallParticipationLog           |
+| 7     | 管理者ダッシュボード・満足度測定     | Satisfaction, 集計ビュー                      |
+| 8     | チュートリアル・スマホ対応の磨き込み | UI最適化                                      |
 
 ## セットアップ
 
@@ -536,16 +536,17 @@ Make は内部で pnpm スクリプトや Supabase CLI を呼び出す薄いラ�
 
 `.github/workflows/` 配下に以下を配置する。
 
-| ワークフロー | トリガー | 役割 |
-|---|---|---|
-| ci.yml | PR / push to main | lint・typecheck・unit/integテスト |
-| e2e.yml | PR / 手動実行 | Playwright E2Eテスト |
-| deploy.yml | push to main | Supabaseマイグレーション適用 |
+| ワークフロー | トリガー          | 役割                              |
+| ------------ | ----------------- | --------------------------------- |
+| ci.yml       | PR / push to main | lint・typecheck・unit/integテスト |
+| e2e.yml      | PR / 手動実行     | Playwright E2Eテスト              |
+| deploy.yml   | push to main      | Supabaseマイグレーション適用      |
 
 Vercelは GitHub 連携で自動デプロイされるため、`deploy.yml` ではDBマイグレーションのみ責務を持つ。
 プレビュー環境はVercelがPRごとに自動生成する。
 
 CI失敗時の方針：
+
 - lintとtypecheckはマージブロック
 - E2Eの一時的な失敗は再実行可能とし、3回連続で失敗した場合のみブロック対象
 
