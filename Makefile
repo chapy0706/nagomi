@@ -69,7 +69,7 @@ test/unit:
 
 .PHONY: test/integ
 test/integ:
-	pnpm vitest run --project integration
+	pnpm vitest run tests/integration
 
 .PHONY: test/e2e
 test/e2e:
