@@ -18,12 +18,8 @@ help:
 	@echo "  fmt            フォーマット適用（Biome）"
 	@echo "  type-check     型チェック（tsc --noEmit）"
 	@echo ""
-	@echo "  db/start       ローカル Supabase 起動"
-	@echo "  db/stop        ローカル Supabase 停止"
-	@echo "  db/up          マイグレーション適用（ローカル）"
-	@echo "  db/reset       ローカル DB リセット（全マイグレーション + seed 再適用）"
+	@echo "  db/push        本番環境にマイグレーション適用"
 	@echo "  db/new name=X  マイグレーションファイル新規作成"
-	@echo "  db/seed        seed データ投入（db/reset と同等）"
 	@echo ""
 	@echo "  verify         全チェック（lint + type-check + test）"
 	@echo "  evidence       verify + カバレッジ出力"
@@ -92,35 +88,17 @@ type-check:
 	pnpm tsc --noEmit
 
 # ------------------------
-# DB Migration（Supabase）
+# DB Migration（Supabase - 本番環境向け）
 # ------------------------
 
-.PHONY: db/start
-db/start:
-	supabase start
-
-.PHONY: db/stop
-db/stop:
-	supabase stop
-
-.PHONY: db/up
-db/up:
-	supabase migration up
-
-.PHONY: db/reset
-db/reset:
-	@echo "警告: DB を全リセットします（全マイグレーション + seed を再適用）。続行しますか？ [y/N]" && read ans && [ "$${ans}" = "y" ]
-	supabase db reset
+.PHONY: db/push
+db/push:
+	supabase db push
 
 .PHONY: db/new
 db/new:
 	@if [ -z "$(name)" ]; then echo "使い方: make db/new name=migration_name" && exit 1; fi
 	supabase migration new $(name)
-
-.PHONY: db/seed
-db/seed:
-	@echo "seed は supabase/seed.sql を db/reset 時に適用します。"
-	$(MAKE) db/reset
 
 
 # ------------------------

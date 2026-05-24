@@ -479,28 +479,40 @@ CREATE TABLE satisfaction_responses (
 - Node.js 20以上
 - pnpm 9以上（corepack経由を推奨）
 - Make
-- Supabaseプロジェクト（無料枠）
+- Supabase CLI（https://supabase.com/docs/guides/cli）
+- Supabaseプロジェクト（本番・ステージング環境、無料枠推奨）
 - Vercelアカウント（無料枠）
 
 ### 初期化
 
 ```bash
+# 1. 依存をインストール
 corepack enable
 make setup
+
+# 2. 環境変数を設定
 cp .env.example .env.local
-# 環境変数を設定
-make db/migrate
+# .env.local を開いて本番 Supabase プロジェクトの接続情報を記入
+
+# 3. マイグレーションを本番環境に適用
+make db/push
+
+# 4. 開発サーバーを起動
 make dev
 ```
 
 ### 環境変数
 
+Supabase ダッシュボード（Settings > API）から以下を取得し、`.env.local` に記入：
+
 ```
-NEXT_PUBLIC_SUPABASE_URL=
-NEXT_PUBLIC_SUPABASE_ANON_KEY=
-SUPABASE_SERVICE_ROLE_KEY=
+NEXT_PUBLIC_SUPABASE_URL=https://xxxxx.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhbGc...（Anon public キー）
+SUPABASE_SERVICE_ROLE_KEY=eyJhbGc...（Service role secret キー）
 NEXT_PUBLIC_JITSI_DOMAIN=meet.jit.si
 ```
+
+**⚠️ 注意**: `SUPABASE_SERVICE_ROLE_KEY` はサーバー側コードのみで使用し、クライアント側に絶対に露出させないこと。
 
 ## Makeコマンド
 
@@ -508,25 +520,24 @@ NEXT_PUBLIC_JITSI_DOMAIN=meet.jit.si
 
 ```bash
 make help               # コマンド一覧を表示
-make setup              # 初期セットアップ（pnpm install + huskyなど）
-make dev                # 開発サーバ起動
+make setup              # 初期セットアップ（pnpm install）
+make dev                # 開発サーバー起動（Next.js）
 make build              # 本番ビルド
 make start              # 本番ビルド起動
+
 make lint               # Biomeによる静的解析
-make format             # Biomeによるフォーマット
-make typecheck          # tscによる型チェック
-make test               # 全テスト（ユニット + 統合）
-make test/unit          # Vitestユニットテストのみ
-make test/integ         # Supabase Localと連動した統合テスト
+make fmt                # Biomeによるフォーマット適用
+make type-check         # tscによる型チェック
+
+make test               # 全テスト実行
+make test/unit          # ユニットテストのみ
 make test/e2e           # Playwright E2E
-make db/migrate         # マイグレーション適用
-make db/reset           # マイグレーション全リセット
-make db/seed            # 初期データ投入
-make db/new name=X      # 新規マイグレーション作成
-make verify             # lint + typecheck + test を一括実行（PR前の確認用）
+
+make db/push            # 本番環境にマイグレーション適用
+make db/new name=X      # 新規マイグレーションファイルを作成
+
+make verify             # lint + type-check + test を一括実行（推奨）
 make evidence           # verify + カバレッジ出力
-make deploy             # 本番デプロイ（マイグレーション含む）
-make clean              # node_modulesとビルド成果物を削除
 ```
 
 Make は内部で pnpm スクリプトや Supabase CLI を呼び出す薄いラッパーとして機能する。
