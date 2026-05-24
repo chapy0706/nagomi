@@ -1,3 +1,4 @@
+import type { DisplayName } from "@/src/domain/value-objects/DisplayName";
 import type { EmployeeId } from "@/src/domain/value-objects/EmployeeId";
 
 export type Employee = {
@@ -7,10 +8,13 @@ export type Employee = {
   isActive: boolean;
   authUserId: string | undefined;
   consentAcceptedAt: Date | undefined;
+  avatarUrl: string | undefined;
 };
 
 export type EmployeeRepository = {
   findByEmployeeId(employeeId: EmployeeId): Promise<Employee | undefined>;
   findByAuthUserId(authUserId: string): Promise<Employee | undefined>;
   recordConsent(employeeId: EmployeeId): Promise<void>;
+  updateDisplayName(employeeId: EmployeeId, displayName: DisplayName): Promise<void>;
+  updateAvatarUrl(employeeId: EmployeeId, url: string | undefined): Promise<void>;
 };

@@ -1,5 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Employee, EmployeeRepository } from "@/src/domain/ports/EmployeeRepository";
+import type { DisplayName } from "@/src/domain/value-objects/DisplayName";
 import { EmployeeId } from "@/src/domain/value-objects/EmployeeId";
 
 type EmployeeRow = {
@@ -9,6 +10,7 @@ type EmployeeRow = {
   is_active: boolean;
   auth_user_id: string | null;
   consent_accepted_at: string | null;
+  avatar_url: string | null;
 };
 
 function rowToEmployee(row: EmployeeRow): Employee {
@@ -19,8 +21,12 @@ function rowToEmployee(row: EmployeeRow): Employee {
     isActive: row.is_active,
     authUserId: row.auth_user_id ?? undefined,
     consentAcceptedAt: row.consent_accepted_at ? new Date(row.consent_accepted_at) : undefined,
+    avatarUrl: row.avatar_url ?? undefined,
   };
 }
+
+const SELECT_FIELDS =
+  "id, employee_id, display_name, is_active, auth_user_id, consent_accepted_at, avatar_url";
 
 export class SupabaseEmployeeRepository implements EmployeeRepository {
   constructor(private readonly client: SupabaseClient) {}
@@ -28,7 +34,7 @@ export class SupabaseEmployeeRepository implements EmployeeRepository {
   async findByEmployeeId(employeeId: EmployeeId): Promise<Employee | undefined> {
     const { data, error } = await this.client
       .from("employees")
-      .select("id, employee_id, display_name, is_active, auth_user_id, consent_accepted_at")
+      .select(SELECT_FIELDS)
       .eq("employee_id", employeeId.value)
       .single();
 
@@ -39,7 +45,7 @@ export class SupabaseEmployeeRepository implements EmployeeRepository {
   async findByAuthUserId(authUserId: string): Promise<Employee | undefined> {
     const { data, error } = await this.client
       .from("employees")
-      .select("id, employee_id, display_name, is_active, auth_user_id, consent_accepted_at")
+      .select(SELECT_FIELDS)
       .eq("auth_user_id", authUserId)
       .single();
 
@@ -54,5 +60,23 @@ export class SupabaseEmployeeRepository implements EmployeeRepository {
       .eq("employee_id", employeeId.value);
 
     if (error) throw new Error(`同意の記録に失敗しました: ${error.message}`);
+  }
+
+  async updateDisplayName(employeeId: EmployeeId, displayName: DisplayName): Promise<void> {
+    const { error } = await this.client
+      .from("employees")
+      .update({ display_name: displayName.value })
+      .eq("employee_id", employeeId.value);
+
+    if (error) throw new Error(`表示名の更新に失敗しました: ${error.message}`);
+  }
+
+  async updateAvatarUrl(employeeId: EmployeeId, url: string | undefined): Promise<void> {
+    const { error } = await this.client
+      .from("employees")
+      .update({ avatar_url: url ?? null })
+      .eq("employee_id", employeeId.value);
+
+    if (error) throw new Error(`アバター画像URLの更新に失敗しました: ${error.message}`);
   }
 }
