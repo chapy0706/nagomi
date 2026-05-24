@@ -1,7 +1,7 @@
 ---
-status: open
+status: closed
 created_at: 2026-05-21
-closed_at:
+closed_at: 2026-05-24
 ---
 
 # issue-05: 9桁社員IDによる認証フロー実装（擬似メール方式）
