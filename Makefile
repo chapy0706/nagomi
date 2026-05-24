@@ -40,7 +40,7 @@ help:
 setup:
 	pnpm install --frozen-lockfile
 	@if ! command -v supabase >/dev/null 2>&1; then \
-		echo "supabase CLI が見つかりません。pnpm 経由（pnpm supabase）で利用するか、インストールしてください: https://supabase.com/docs/guides/cli"; \
+		echo "supabase CLI が見つかりません。brew install supabase/tap/supabase でインストールしてください: https://supabase.com/docs/guides/cli"; \
 	fi
 
 .PHONY: setup/e2e
@@ -97,30 +97,31 @@ type-check:
 
 .PHONY: db/start
 db/start:
-	pnpm supabase start
+	supabase start
 
 .PHONY: db/stop
 db/stop:
-	pnpm supabase stop
+	supabase stop
 
 .PHONY: db/up
 db/up:
-	pnpm supabase migration up
+	supabase migration up
 
 .PHONY: db/reset
 db/reset:
-	@echo "警告: ローカル DB を全リセットします（全マイグレーション + seed を再適用）。続行しますか？ [y/N]" && read ans && [ "$${ans}" = "y" ]
-	pnpm supabase db reset
+	@echo "警告: DB を全リセットします（全マイグレーション + seed を再適用）。続行しますか？ [y/N]" && read ans && [ "$${ans}" = "y" ]
+	supabase db reset
 
 .PHONY: db/new
 db/new:
 	@if [ -z "$(name)" ]; then echo "使い方: make db/new name=migration_name" && exit 1; fi
-	pnpm supabase migration new $(name)
+	supabase migration new $(name)
 
 .PHONY: db/seed
 db/seed:
 	@echo "seed は supabase/seed.sql を db/reset 時に適用します。"
 	$(MAKE) db/reset
+
 
 # ------------------------
 # Verify（重要: Claude Code はこれを必ず通すこと）

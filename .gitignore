@@ -25,3 +25,7 @@ out/evidence/
 *.db
 *.sqlite
 *.sqlite3
+
+# Supabase ローカル生成ファイル
+supabase/.branches
+supabase/.temp

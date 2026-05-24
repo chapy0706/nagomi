@@ -1,7 +1,7 @@
 ---
-status: open
+status: closed
 created_at: 2026-05-21
-closed_at:
+closed_at: 2026-05-24
 ---
 
 # issue-03: Supabase プロジェクト初期化とローカル開発環境構築
