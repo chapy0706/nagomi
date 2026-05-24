@@ -11,6 +11,7 @@ function makeEmployee(overrides?: Partial<Employee>): Employee {
     displayName: "Test User",
     isActive: true,
     authUserId: undefined,
+    consentAcceptedAt: undefined,
     ...overrides,
   };
 }
@@ -20,12 +21,15 @@ function makeAuthGateway(result: AuthResult): AuthGateway {
     signIn: async () => result,
     signOut: async () => {},
     getAuthUserId: async () => undefined,
+    updatePassword: async () => {},
   };
 }
 
 function makeEmployeeRepository(employee: Employee | undefined): EmployeeRepository {
   return {
     findByEmployeeId: async () => employee,
+    findByAuthUserId: async () => undefined,
+    recordConsent: async () => {},
   };
 }
 

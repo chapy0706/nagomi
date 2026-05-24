@@ -1,6 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { AuthGateway, AuthResult } from "@/src/domain/ports/AuthGateway";
 import type { EmployeeId } from "@/src/domain/value-objects/EmployeeId";
+import type { Pin } from "@/src/domain/value-objects/Pin";
 
 const PSEUDO_EMAIL_DOMAIN = "@employees.internal";
 
@@ -24,5 +25,10 @@ export class SupabaseAuthGateway implements AuthGateway {
   async getAuthUserId(): Promise<string | undefined> {
     const { data } = await this.client.auth.getUser();
     return data.user?.id;
+  }
+
+  async updatePassword(newPin: Pin): Promise<void> {
+    const { error } = await this.client.auth.updateUser({ password: newPin.value });
+    if (error) throw new Error(`パスワード更新に失敗しました: ${error.message}`);
   }
 }
