@@ -41,6 +41,7 @@ function parsePresence(raw: unknown): PresencePayload | undefined {
 
 export class SupabasePresenceGateway implements PresenceGateway {
   private channel: RealtimeChannel | undefined;
+  private trackedPayload: RawPresence | undefined;
 
   constructor(private readonly supabase: SupabaseClient) {}
 
@@ -49,13 +50,14 @@ export class SupabasePresenceGateway implements PresenceGateway {
       await this.leave();
     }
 
-    const rawPayload = {
+    const rawPayload: RawPresence = {
       employeeId: payload.employeeId,
       displayName: payload.displayName,
       avatarUrl: payload.avatarUrl ?? null,
       x: payload.x,
       y: payload.y,
       status: payload.status,
+      presence_ref: "",
     };
 
     const channel = this.supabase.channel(CHANNEL_NAME, {
@@ -90,6 +92,7 @@ export class SupabasePresenceGateway implements PresenceGateway {
       })
       .subscribe(async (status) => {
         if (status === "SUBSCRIBED") {
+          this.trackedPayload = rawPayload;
           await channel.track(rawPayload);
         } else if (status === "CHANNEL_ERROR" || status === "TIMED_OUT") {
           console.warn(`[PresenceGateway] ${status} — reconnecting automatically`);
@@ -99,10 +102,18 @@ export class SupabasePresenceGateway implements PresenceGateway {
     this.channel = channel;
   }
 
+  async updatePosition(x: number, y: number): Promise<void> {
+    if (!this.channel || !this.trackedPayload) return;
+    const updated: RawPresence = { ...this.trackedPayload, x, y };
+    this.trackedPayload = updated;
+    await this.channel.track(updated);
+  }
+
   async leave(): Promise<void> {
     if (this.channel) {
       await this.channel.unsubscribe();
       this.channel = undefined;
+      this.trackedPayload = undefined;
     }
   }
 }

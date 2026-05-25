@@ -17,5 +17,6 @@ export type PresenceHandlers = {
 
 export type PresenceGateway = {
   join(payload: PresencePayload, handlers: PresenceHandlers): Promise<void>;
+  updatePosition(x: number, y: number): Promise<void>;
   leave(): Promise<void>;
 };

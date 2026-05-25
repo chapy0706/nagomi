@@ -3,6 +3,7 @@ import { createSupabaseAdminClient } from "./adminClient";
 import { createSupabaseServerClient } from "./serverClient";
 
 export type SessionEmployee = {
+  employeeId: string;
   displayName: string;
   avatarUrl: string | undefined;
   consentAcceptedAt: Date | undefined;
@@ -21,7 +22,7 @@ export async function getSessionContext(): Promise<SessionContext> {
   const adminClient = createSupabaseAdminClient();
   const { data: row } = await adminClient
     .from("employees")
-    .select("display_name, avatar_url, is_active, consent_accepted_at")
+    .select("employee_id, display_name, avatar_url, is_active, consent_accepted_at")
     .eq("auth_user_id", data.user.id)
     .maybeSingle();
 
@@ -33,6 +34,7 @@ export async function getSessionContext(): Promise<SessionContext> {
   return {
     authUserId: data.user.id,
     employee: {
+      employeeId: row.employee_id as string,
       displayName: row.display_name as string,
       avatarUrl: (row.avatar_url as string | null) ?? undefined,
       consentAcceptedAt: row.consent_accepted_at

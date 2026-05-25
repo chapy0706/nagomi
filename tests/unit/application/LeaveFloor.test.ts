@@ -6,6 +6,7 @@ function makeFakeGateway() {
   let leaveCount = 0;
   const gateway: PresenceGateway = {
     join: vi.fn(async () => {}),
+    updatePosition: vi.fn(async () => {}),
     leave: vi.fn(async () => {
       leaveCount++;
     }),
