@@ -20,6 +20,8 @@ help:
 	@echo ""
 	@echo "  db/push        本番環境にマイグレーション適用"
 	@echo "  db/new name=X  マイグレーションファイル新規作成"
+	@echo "  db/reset       ローカル DB をリセット（migration + seed 再適用）"
+	@echo "  db/seed-dev    テストアカウントを hosted Supabase に作成（.env.local 必要）"
 	@echo ""
 	@echo "  verify         全チェック（lint + type-check + test）"
 	@echo "  evidence       verify + カバレッジ出力"
@@ -88,7 +90,7 @@ type-check:
 	pnpm tsc --noEmit
 
 # ------------------------
-# DB Migration（Supabase - 本番環境向け）
+# DB Migration / Seed
 # ------------------------
 
 .PHONY: db/push
@@ -99,6 +101,15 @@ db/push:
 db/new:
 	@if [ -z "$(name)" ]; then echo "使い方: make db/new name=migration_name" && exit 1; fi
 	supabase migration new $(name)
+
+.PHONY: db/reset
+db/reset:
+	supabase db reset
+
+.PHONY: db/seed-dev
+db/seed-dev:
+	@if [ ! -f .env.local ]; then echo "エラー: .env.local が見つかりません" && exit 1; fi
+	node --env-file=.env.local scripts/seed-dev-account.mjs
 
 
 # ------------------------
