@@ -3,18 +3,35 @@
 import { useCallback, useEffect, useMemo } from "react";
 import { AvatarMarker } from "@/app/_components/AvatarMarker";
 import { StatusPill } from "@/app/_components/StatusPill";
+import { VideoOverlay } from "@/app/_components/VideoOverlay";
 import { usePresence } from "@/app/_hooks/usePresence";
 import { useThrottledMove } from "@/app/_hooks/useThrottledMove";
 import { selectPresenceList, usePresenceStore } from "@/app/_stores/presenceStore";
 import { useSelfPositionStore } from "@/app/_stores/selfPositionStore";
 import { selectEffectiveStatus, useSelfStatusStore } from "@/app/_stores/selfStatusStore";
+import { useVideoStore } from "@/app/_stores/videoStore";
 import { buildFloor, DEFAULT_FLOOR_LAYOUT } from "@/src/domain/config/floorLayout";
+import type { MeetingRoomTopic } from "@/src/domain/entities/MeetingRoom";
 import { createSupabaseBrowserClient } from "@/src/infrastructure/supabase/browserClient";
 import { SupabasePresenceGateway } from "@/src/infrastructure/supabase/SupabasePresenceGateway";
 
 const FLOOR_WIDTH = DEFAULT_FLOOR_LAYOUT.width;
 const FLOOR_HEIGHT = DEFAULT_FLOOR_LAYOUT.height;
 const ARROW_STEP = 40;
+const ROOM_W = 120;
+const ROOM_H = 80;
+
+const TOPIC_LABELS: Record<MeetingRoomTopic, string> = {
+  counseling: "相談室",
+  casual: "雑談室",
+  meeting: "会議室",
+};
+
+const TOPIC_COLORS: Record<MeetingRoomTopic, string> = {
+  counseling: "bg-indigo-100 border-indigo-400 text-indigo-800",
+  casual: "bg-green-100 border-green-400 text-green-800",
+  meeting: "bg-blue-100 border-blue-400 text-blue-800",
+};
 
 type FloorCanvasProps = {
   authUserId: string;
@@ -39,6 +56,14 @@ export function FloorCanvas({
   const presences = usePresenceStore(selectPresenceList);
   const selfPosition = useSelfPositionStore((s) => s.position);
   const selfStatus = useSelfStatusStore(selectEffectiveStatus);
+  const openRoom = useVideoStore((s) => s.open);
+
+  // Sync local status changes to presence gateway
+  useEffect(() => {
+    gateway.updateStatus(selfStatus).catch((err) => {
+      console.error("[FloorCanvas] updateStatus failed:", err);
+    });
+  }, [selfStatus, gateway]);
 
   const handleFloorClick = useCallback(
     (e: React.MouseEvent<HTMLDivElement>) => {
@@ -60,6 +85,14 @@ export function FloorCanvas({
       move(x, y);
     },
     [move]
+  );
+
+  const handleRoomClick = useCallback(
+    (e: React.MouseEvent, roomId: string) => {
+      e.stopPropagation();
+      openRoom(roomId);
+    },
+    [openRoom]
   );
 
   useEffect(() => {
@@ -95,10 +128,10 @@ export function FloorCanvas({
     <div className="relative w-full h-full flex flex-col">
       <div className="flex items-center gap-4 px-4 py-2 bg-white border-b border-gray-200 shrink-0">
         <span className="text-sm font-medium text-gray-900">{selfDisplayName}</span>
-        <StatusPill gateway={gateway} />
+        <StatusPill />
       </div>
 
-      <div className="overflow-auto flex-1">
+      <div className="overflow-auto flex-1 relative">
         <div
           role="application"
           aria-label="フロアマップ（クリックまたは矢印キーで移動）"
@@ -108,6 +141,24 @@ export function FloorCanvas({
           onKeyDown={() => {}}
           onTouchEnd={handleTouchEnd}
         >
+          {floor.meetingRooms.map((room) => (
+            <button
+              key={room.id}
+              type="button"
+              className={`absolute flex flex-col items-center justify-center border-2 rounded-lg text-xs font-semibold cursor-pointer select-none ${TOPIC_COLORS[room.topic]}`}
+              style={{
+                left: room.position.x - ROOM_W / 2,
+                top: room.position.y - ROOM_H / 2,
+                width: ROOM_W,
+                height: ROOM_H,
+              }}
+              onClick={(e) => handleRoomClick(e, room.id)}
+              aria-label={`${TOPIC_LABELS[room.topic]}に入室`}
+            >
+              <span>{TOPIC_LABELS[room.topic]}</span>
+            </button>
+          ))}
+
           {othersPresences.map((p) => (
             <AvatarMarker
               key={p.employeeId}
@@ -133,6 +184,8 @@ export function FloorCanvas({
             />
           )}
         </div>
+
+        <VideoOverlay displayName={selfDisplayName} />
       </div>
     </div>
   );

@@ -1,20 +1,17 @@
 "use client";
 
-import { useMemo } from "react";
 import { selectEffectiveStatus, useSelfStatusStore } from "@/app/_stores/selfStatusStore";
-import { UpdateStatus } from "@/src/application/use-cases/UpdateStatus";
-import type { ManualStatus, PresenceGateway } from "@/src/domain/ports/PresenceGateway";
+import type { ManualStatus } from "@/src/domain/ports/PresenceGateway";
 
 type StatusOption = {
   value: ManualStatus;
   label: string;
-  icon: string;
 };
 
 const STATUS_OPTIONS: StatusOption[] = [
-  { value: "available", label: "ログイン中", icon: "●" },
-  { value: "busy", label: "取り込み中", icon: "◆" },
-  { value: "away", label: "離席中", icon: "○" },
+  { value: "available", label: "ログイン中" },
+  { value: "busy", label: "取り込み中" },
+  { value: "away", label: "離席中" },
 ];
 
 const STATUS_COLORS: Record<string, string> = {
@@ -31,25 +28,11 @@ const STATUS_LABELS: Record<string, string> = {
   in_call: "通話中",
 };
 
-type StatusPillProps = {
-  gateway: PresenceGateway;
-};
-
-export function StatusPill({ gateway }: StatusPillProps) {
-  const updateStatus = useMemo(() => new UpdateStatus(gateway), [gateway]);
+export function StatusPill() {
   const manualStatus = useSelfStatusStore((s) => s.manualStatus);
   const isInCall = useSelfStatusStore((s) => s.isInCall);
   const effectiveStatus = useSelfStatusStore(selectEffectiveStatus);
   const setManualStatus = useSelfStatusStore((s) => s.setManualStatus);
-
-  const handleChange = async (next: ManualStatus) => {
-    setManualStatus(next);
-    if (!isInCall) {
-      await updateStatus.execute(next).catch((err) => {
-        console.error("[StatusPill] updateStatus failed:", err);
-      });
-    }
-  };
 
   return (
     <div className="relative flex items-center gap-2">
@@ -62,7 +45,7 @@ export function StatusPill({ gateway }: StatusPillProps) {
       ) : (
         <select
           value={manualStatus}
-          onChange={(e) => handleChange(e.target.value as ManualStatus)}
+          onChange={(e) => setManualStatus(e.target.value as ManualStatus)}
           className="text-sm font-medium text-gray-700 bg-transparent border-none cursor-pointer focus:outline-none"
           aria-label="ステータスを変更"
         >
