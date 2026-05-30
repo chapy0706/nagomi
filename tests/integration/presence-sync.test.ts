@@ -36,7 +36,7 @@ describe.skipIf(!RUN)("presence-sync integration", () => {
       avatarUrl: undefined,
       x: 100,
       y: 200,
-      status: "active",
+      status: "available",
     };
 
     const synced: PresencePayload[][] = [];
@@ -48,7 +48,7 @@ describe.skipIf(!RUN)("presence-sync integration", () => {
         avatarUrl: undefined,
         x: 200,
         y: 200,
-        status: "active",
+        status: "available",
       },
       { onSync: (ps) => synced.push([...ps]), onJoin: () => {}, onLeave: () => {} }
     );
@@ -76,7 +76,7 @@ describe.skipIf(!RUN)("presence-sync integration", () => {
         avatarUrl: undefined,
         x: 200,
         y: 200,
-        status: "active",
+        status: "available",
       },
       { onSync: () => {}, onJoin: () => {}, onLeave: (id) => leftIds.push(id) }
     );
@@ -88,7 +88,7 @@ describe.skipIf(!RUN)("presence-sync integration", () => {
         avatarUrl: undefined,
         x: 100,
         y: 200,
-        status: "active",
+        status: "available",
       },
       { onSync: () => {}, onJoin: () => {}, onLeave: () => {} }
     );

@@ -27,8 +27,16 @@ function parsePresence(raw: unknown): PresencePayload | undefined {
   if (typeof r.displayName !== "string") return undefined;
   if (typeof r.x !== "number" || !Number.isFinite(r.x)) return undefined;
   if (typeof r.y !== "number" || !Number.isFinite(r.y)) return undefined;
+  const rawStatus = r.status;
   const status: PresenceStatus =
-    r.status === "active" || r.status === "away" || r.status === "busy" ? r.status : "active";
+    rawStatus === "available" ||
+    rawStatus === "away" ||
+    rawStatus === "busy" ||
+    rawStatus === "in_call"
+      ? rawStatus
+      : rawStatus === "active"
+        ? "available"
+        : "available";
   return {
     employeeId: r.employeeId,
     displayName: r.displayName,
@@ -105,6 +113,13 @@ export class SupabasePresenceGateway implements PresenceGateway {
   async updatePosition(x: number, y: number): Promise<void> {
     if (!this.channel || !this.trackedPayload) return;
     const updated: RawPresence = { ...this.trackedPayload, x, y };
+    this.trackedPayload = updated;
+    await this.channel.track(updated);
+  }
+
+  async updateStatus(status: PresenceStatus): Promise<void> {
+    if (!this.channel || !this.trackedPayload) return;
+    const updated: RawPresence = { ...this.trackedPayload, status };
     this.trackedPayload = updated;
     await this.channel.track(updated);
   }

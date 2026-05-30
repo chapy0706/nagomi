@@ -47,6 +47,7 @@ function makeFakeGateway() {
       joined.push({ payload, handlers });
     }),
     updatePosition: vi.fn(async () => {}),
+    updateStatus: vi.fn(async () => {}),
     leave: vi.fn(async () => {}),
   };
   return { gateway, joined };
@@ -83,7 +84,7 @@ describe("EnterFloor", () => {
 
     expect(joined[0].payload.employeeId).toBe(emp.employeeId.value);
     expect(joined[0].payload.displayName).toBe("花子");
-    expect(joined[0].payload.status).toBe("active");
+    expect(joined[0].payload.status).toBe("available");
   });
 
   it("社員が見つからない場合はエラーを返しjoinしない", async () => {

@@ -2,10 +2,12 @@
 
 import { useCallback, useEffect, useMemo } from "react";
 import { AvatarMarker } from "@/app/_components/AvatarMarker";
+import { StatusPill } from "@/app/_components/StatusPill";
 import { usePresence } from "@/app/_hooks/usePresence";
 import { useThrottledMove } from "@/app/_hooks/useThrottledMove";
 import { selectPresenceList, usePresenceStore } from "@/app/_stores/presenceStore";
 import { useSelfPositionStore } from "@/app/_stores/selfPositionStore";
+import { selectEffectiveStatus, useSelfStatusStore } from "@/app/_stores/selfStatusStore";
 import { buildFloor, DEFAULT_FLOOR_LAYOUT } from "@/src/domain/config/floorLayout";
 import { createSupabaseBrowserClient } from "@/src/infrastructure/supabase/browserClient";
 import { SupabasePresenceGateway } from "@/src/infrastructure/supabase/SupabasePresenceGateway";
@@ -36,6 +38,7 @@ export function FloorCanvas({
 
   const presences = usePresenceStore(selectPresenceList);
   const selfPosition = useSelfPositionStore((s) => s.position);
+  const selfStatus = useSelfStatusStore(selectEffectiveStatus);
 
   const handleFloorClick = useCallback(
     (e: React.MouseEvent<HTMLDivElement>) => {
@@ -59,7 +62,6 @@ export function FloorCanvas({
     [move]
   );
 
-  // 矢印キーはグローバルリスナーで処理（フォーカスに依存しないゲーム的 UX）
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (!selfPosition) return;
@@ -90,38 +92,47 @@ export function FloorCanvas({
   const othersPresences = presences.filter((p) => p.employeeId !== selfEmployeeId);
 
   return (
-    <div className="overflow-auto w-full h-full">
-      <div
-        role="application"
-        aria-label="フロアマップ（クリックまたは矢印キーで移動）"
-        className="relative bg-gray-100 cursor-pointer"
-        style={{ width: FLOOR_WIDTH, height: FLOOR_HEIGHT }}
-        onClick={handleFloorClick}
-        onKeyDown={() => {}}
-        onTouchEnd={handleTouchEnd}
-      >
-        {othersPresences.map((p) => (
-          <AvatarMarker
-            key={p.employeeId}
-            employeeId={p.employeeId}
-            displayName={p.displayName}
-            avatarUrl={p.avatarUrl}
-            x={p.x}
-            y={p.y}
-          />
-        ))}
+    <div className="relative w-full h-full flex flex-col">
+      <div className="flex items-center gap-4 px-4 py-2 bg-white border-b border-gray-200 shrink-0">
+        <span className="text-sm font-medium text-gray-900">{selfDisplayName}</span>
+        <StatusPill gateway={gateway} />
+      </div>
 
-        {selfPosition && (
-          <AvatarMarker
-            key={selfEmployeeId}
-            employeeId={selfEmployeeId}
-            displayName={selfDisplayName}
-            avatarUrl={selfAvatarUrl}
-            x={selfPosition.x}
-            y={selfPosition.y}
-            isSelf
-          />
-        )}
+      <div className="overflow-auto flex-1">
+        <div
+          role="application"
+          aria-label="フロアマップ（クリックまたは矢印キーで移動）"
+          className="relative bg-gray-100 cursor-pointer"
+          style={{ width: FLOOR_WIDTH, height: FLOOR_HEIGHT }}
+          onClick={handleFloorClick}
+          onKeyDown={() => {}}
+          onTouchEnd={handleTouchEnd}
+        >
+          {othersPresences.map((p) => (
+            <AvatarMarker
+              key={p.employeeId}
+              employeeId={p.employeeId}
+              displayName={p.displayName}
+              avatarUrl={p.avatarUrl}
+              x={p.x}
+              y={p.y}
+              status={p.status}
+            />
+          ))}
+
+          {selfPosition && (
+            <AvatarMarker
+              key={selfEmployeeId}
+              employeeId={selfEmployeeId}
+              displayName={selfDisplayName}
+              avatarUrl={selfAvatarUrl}
+              x={selfPosition.x}
+              y={selfPosition.y}
+              status={selfStatus}
+              isSelf
+            />
+          )}
+        </div>
       </div>
     </div>
   );

@@ -41,7 +41,7 @@ export class EnterFloor {
         avatarUrl: employee.avatarUrl,
         x: position.x,
         y: position.y,
-        status: "active",
+        status: "available",
       },
       input.handlers
     );

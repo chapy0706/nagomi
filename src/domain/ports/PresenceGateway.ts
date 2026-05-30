@@ -1,4 +1,5 @@
-export type PresenceStatus = "active" | "away" | "busy";
+export type ManualStatus = "available" | "busy" | "away";
+export type PresenceStatus = ManualStatus | "in_call";
 
 export type PresencePayload = {
   readonly employeeId: string;
@@ -18,5 +19,6 @@ export type PresenceHandlers = {
 export type PresenceGateway = {
   join(payload: PresencePayload, handlers: PresenceHandlers): Promise<void>;
   updatePosition(x: number, y: number): Promise<void>;
+  updateStatus(status: PresenceStatus): Promise<void>;
   leave(): Promise<void>;
 };

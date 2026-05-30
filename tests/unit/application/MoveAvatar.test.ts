@@ -12,6 +12,7 @@ function makeFakeGateway() {
     updatePosition: vi.fn(async (x, y) => {
       updates.push({ x, y });
     }),
+    updateStatus: vi.fn(async () => {}),
     leave: vi.fn(async () => {}),
   };
   return { gateway, updates };
