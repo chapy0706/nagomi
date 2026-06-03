@@ -2,10 +2,12 @@
 
 import { useCallback, useEffect, useMemo } from "react";
 import { AvatarMarker } from "@/app/_components/AvatarMarker";
+import { InvitationModal } from "@/app/_components/InvitationModal";
 import { StatusPill } from "@/app/_components/StatusPill";
 import { VideoOverlay } from "@/app/_components/VideoOverlay";
 import { usePresence } from "@/app/_hooks/usePresence";
 import { useThrottledMove } from "@/app/_hooks/useThrottledMove";
+import { useInvitationStore } from "@/app/_stores/invitationStore";
 import { selectPresenceList, usePresenceStore } from "@/app/_stores/presenceStore";
 import { useSelfPositionStore } from "@/app/_stores/selfPositionStore";
 import { selectEffectiveStatus, useSelfStatusStore } from "@/app/_stores/selfStatusStore";
@@ -37,7 +39,7 @@ type FloorCanvasProps = {
   authUserId: string;
   selfEmployeeId: string;
   selfDisplayName: string;
-  selfAvatarUrl?: string;
+  selfAvatarUrl?: string | undefined;
 };
 
 export function FloorCanvas({
@@ -57,6 +59,9 @@ export function FloorCanvas({
   const selfPosition = useSelfPositionStore((s) => s.position);
   const selfStatus = useSelfStatusStore(selectEffectiveStatus);
   const openRoom = useVideoStore((s) => s.open);
+  const invitationTarget = useInvitationStore((s) => s.target);
+  const openInvitation = useInvitationStore((s) => s.openFor);
+  const closeInvitation = useInvitationStore((s) => s.close);
 
   // Sync local status changes to presence gateway
   useEffect(() => {
@@ -168,6 +173,18 @@ export function FloorCanvas({
               x={p.x}
               y={p.y}
               status={p.status}
+              onClick={
+                p.authUserId
+                  ? () =>
+                      openInvitation({
+                        employeeId: p.employeeId,
+                        displayName: p.displayName,
+                        avatarUrl: p.avatarUrl,
+                        authUserId: p.authUserId as string,
+                        status: p.status,
+                      })
+                  : undefined
+              }
             />
           ))}
 
@@ -187,6 +204,16 @@ export function FloorCanvas({
 
         <VideoOverlay displayName={selfDisplayName} />
       </div>
+
+      {invitationTarget && (
+        <InvitationModal
+          target={invitationTarget}
+          selfAuthUserId={authUserId}
+          selfDisplayName={selfDisplayName}
+          selfAvatarUrl={selfAvatarUrl}
+          onClose={closeInvitation}
+        />
+      )}
     </div>
   );
 }

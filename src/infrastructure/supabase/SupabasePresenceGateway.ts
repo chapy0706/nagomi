@@ -12,6 +12,7 @@ const CONNECTION_WARN_THRESHOLD = 180;
 
 type RawPresence = {
   employeeId: string;
+  authUserId?: string;
   displayName: string;
   avatarUrl: string | null;
   x: number;
@@ -25,6 +26,7 @@ function parsePresence(raw: unknown): PresencePayload | undefined {
   const r = raw as Record<string, unknown>;
   if (typeof r.employeeId !== "string" || !r.employeeId) return undefined;
   if (typeof r.displayName !== "string") return undefined;
+  const authUserId = typeof r.authUserId === "string" ? r.authUserId : undefined;
   if (typeof r.x !== "number" || !Number.isFinite(r.x)) return undefined;
   if (typeof r.y !== "number" || !Number.isFinite(r.y)) return undefined;
   const rawStatus = r.status;
@@ -39,6 +41,7 @@ function parsePresence(raw: unknown): PresencePayload | undefined {
         : "available";
   return {
     employeeId: r.employeeId,
+    authUserId,
     displayName: r.displayName,
     avatarUrl: typeof r.avatarUrl === "string" ? r.avatarUrl : undefined,
     x: r.x,
@@ -60,6 +63,7 @@ export class SupabasePresenceGateway implements PresenceGateway {
 
     const rawPayload: RawPresence = {
       employeeId: payload.employeeId,
+      authUserId: payload.authUserId,
       displayName: payload.displayName,
       avatarUrl: payload.avatarUrl ?? null,
       x: payload.x,

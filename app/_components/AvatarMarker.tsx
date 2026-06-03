@@ -9,6 +9,7 @@ type AvatarMarkerProps = {
   y: number;
   status?: PresenceStatus;
   isSelf?: boolean;
+  onClick?: () => void;
 };
 
 const STATUS_RING: Record<PresenceStatus, string> = {
@@ -25,6 +26,34 @@ const STATUS_LABEL: Record<PresenceStatus, string> = {
   in_call: "通話中",
 };
 
+const baseStyle = (x: number, y: number) => ({
+  transform: `translate(${x - 24}px, ${y - 24}px)`,
+  transition: "transform 200ms ease",
+  willChange: "transform",
+});
+
+function AvatarInner({
+  displayName,
+  avatarUrl,
+  employeeId,
+  status,
+}: Pick<AvatarMarkerProps, "displayName" | "avatarUrl" | "employeeId" | "status">) {
+  const ringColor = status ? STATUS_RING[status] : "ring-gray-300";
+  return (
+    <>
+      <div
+        className={`rounded-full ring-2 ${ringColor}`}
+        title={status ? STATUS_LABEL[status] : undefined}
+      >
+        <AvatarImage displayName={displayName} avatarUrl={avatarUrl} seed={employeeId} size={48} />
+      </div>
+      <span className="mt-1 px-1 text-xs text-gray-800 bg-white/80 rounded whitespace-nowrap">
+        {displayName}
+      </span>
+    </>
+  );
+}
+
 export function AvatarMarker({
   displayName,
   avatarUrl,
@@ -33,28 +62,41 @@ export function AvatarMarker({
   y,
   status,
   isSelf,
+  onClick,
 }: AvatarMarkerProps) {
-  const ringColor = status ? STATUS_RING[status] : "ring-gray-300";
-  const ringWidth = isSelf ? "ring-2" : "ring-2";
+  if (!isSelf && onClick) {
+    return (
+      <button
+        type="button"
+        className="absolute flex flex-col items-center z-0 pointer-events-auto cursor-pointer select-none"
+        style={baseStyle(x, y)}
+        onClick={(e) => {
+          e.stopPropagation();
+          onClick();
+        }}
+        aria-label={`${displayName} に招待を送る`}
+      >
+        <AvatarInner
+          displayName={displayName}
+          avatarUrl={avatarUrl}
+          employeeId={employeeId}
+          status={status}
+        />
+      </button>
+    );
+  }
 
   return (
     <div
       className={`absolute flex flex-col items-center pointer-events-none select-none ${isSelf ? "z-10" : "z-0"}`}
-      style={{
-        transform: `translate(${x - 24}px, ${y - 24}px)`,
-        transition: "transform 200ms ease",
-        willChange: "transform",
-      }}
+      style={baseStyle(x, y)}
     >
-      <div
-        className={`rounded-full ${ringWidth} ${ringColor}`}
-        title={status ? STATUS_LABEL[status] : undefined}
-      >
-        <AvatarImage displayName={displayName} avatarUrl={avatarUrl} seed={employeeId} size={48} />
-      </div>
-      <span className="mt-1 px-1 text-xs text-gray-800 bg-white/80 rounded whitespace-nowrap">
-        {displayName}
-      </span>
+      <AvatarInner
+        displayName={displayName}
+        avatarUrl={avatarUrl}
+        employeeId={employeeId}
+        status={status}
+      />
     </div>
   );
 }

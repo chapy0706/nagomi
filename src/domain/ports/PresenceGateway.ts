@@ -3,6 +3,7 @@ export type PresenceStatus = ManualStatus | "in_call";
 
 export type PresencePayload = {
   readonly employeeId: string;
+  readonly authUserId?: string;
   readonly displayName: string;
   readonly avatarUrl: string | undefined;
   readonly x: number;

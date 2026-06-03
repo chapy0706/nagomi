@@ -1,7 +1,7 @@
 ---
-status: open
+status: closed
 created_at: 2026-05-21
-closed_at:
+closed_at: 2026-06-03
 ---
 
 # issue-14: 通話招待ドメインと招待フロー（IssueCallInvitation）

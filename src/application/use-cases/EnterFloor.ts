@@ -37,6 +37,7 @@ export class EnterFloor {
     await this.presenceGateway.join(
       {
         employeeId: employee.employeeId.value,
+        authUserId: input.authUserId,
         displayName: employee.displayName,
         avatarUrl: employee.avatarUrl,
         x: position.x,
