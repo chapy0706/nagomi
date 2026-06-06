@@ -12,6 +12,8 @@ type VideoOverlayProps = {
 export function VideoOverlay({ displayName }: VideoOverlayProps) {
   const isOpen = useVideoStore((s) => s.isOpen);
   const roomId = useVideoStore((s) => s.roomId);
+  const startWithAudioMuted = useVideoStore((s) => s.startWithAudioMuted);
+  const startWithVideoMuted = useVideoStore((s) => s.startWithVideoMuted);
   const close = useVideoStore((s) => s.close);
   const enterCall = useSelfStatusStore((s) => s.enterCall);
   const exitCall = useSelfStatusStore((s) => s.exitCall);
@@ -32,8 +34,8 @@ export function VideoOverlay({ displayName }: VideoOverlayProps) {
         {
           roomId,
           displayName,
-          startWithVideoMuted: true,
-          startWithAudioMuted: false,
+          startWithVideoMuted,
+          startWithAudioMuted,
         },
         {
           onReadyToClose: () => close(),
@@ -46,7 +48,16 @@ export function VideoOverlay({ displayName }: VideoOverlayProps) {
       gatewayRef.current = undefined;
       exitCall();
     };
-  }, [isOpen, roomId, displayName, enterCall, exitCall, close]);
+  }, [
+    isOpen,
+    roomId,
+    displayName,
+    startWithAudioMuted,
+    startWithVideoMuted,
+    enterCall,
+    exitCall,
+    close,
+  ]);
 
   if (!isOpen) return null;
 

@@ -18,6 +18,7 @@ type RawPresence = {
   x: number;
   y: number;
   status: string;
+  currentRoomId: string | null;
   presence_ref: string;
 };
 
@@ -47,6 +48,7 @@ function parsePresence(raw: unknown): PresencePayload | undefined {
     x: r.x,
     y: r.y,
     status,
+    currentRoomId: typeof r.currentRoomId === "string" ? r.currentRoomId : undefined,
   };
 }
 
@@ -69,6 +71,7 @@ export class SupabasePresenceGateway implements PresenceGateway {
       x: payload.x,
       y: payload.y,
       status: payload.status,
+      currentRoomId: payload.currentRoomId ?? null,
       presence_ref: "",
     };
 
@@ -124,6 +127,13 @@ export class SupabasePresenceGateway implements PresenceGateway {
   async updateStatus(status: PresenceStatus): Promise<void> {
     if (!this.channel || !this.trackedPayload) return;
     const updated: RawPresence = { ...this.trackedPayload, status };
+    this.trackedPayload = updated;
+    await this.channel.track(updated);
+  }
+
+  async updateRoom(roomId: string | undefined): Promise<void> {
+    if (!this.channel || !this.trackedPayload) return;
+    const updated: RawPresence = { ...this.trackedPayload, currentRoomId: roomId ?? null };
     this.trackedPayload = updated;
     await this.channel.track(updated);
   }

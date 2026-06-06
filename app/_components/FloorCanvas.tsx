@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo } from "react";
 import { AvatarMarker } from "@/app/_components/AvatarMarker";
 import { IncomingInvitationModal } from "@/app/_components/IncomingInvitationModal";
 import { InvitationModal } from "@/app/_components/InvitationModal";
+import { MeetingRoomLobby } from "@/app/_components/MeetingRoomLobby";
 import { StatusPill } from "@/app/_components/StatusPill";
 import { VideoOverlay } from "@/app/_components/VideoOverlay";
 import { useIncomingInvitations } from "@/app/_hooks/useIncomingInvitations";
@@ -11,6 +12,7 @@ import { useInvitationResponses } from "@/app/_hooks/useInvitationResponses";
 import { usePresence } from "@/app/_hooks/usePresence";
 import { useThrottledMove } from "@/app/_hooks/useThrottledMove";
 import { useInvitationStore } from "@/app/_stores/invitationStore";
+import { useLobbyStore } from "@/app/_stores/lobbyStore";
 import { selectPresenceList, usePresenceStore } from "@/app/_stores/presenceStore";
 import { useSelfPositionStore } from "@/app/_stores/selfPositionStore";
 import { selectEffectiveStatus, useSelfStatusStore } from "@/app/_stores/selfStatusStore";
@@ -63,7 +65,9 @@ export function FloorCanvas({
   const presences = usePresenceStore(selectPresenceList);
   const selfPosition = useSelfPositionStore((s) => s.position);
   const selfStatus = useSelfStatusStore(selectEffectiveStatus);
-  const openRoom = useVideoStore((s) => s.open);
+  const videoRoomId = useVideoStore((s) => s.roomId);
+  const isVideoOpen = useVideoStore((s) => s.isOpen);
+  const openLobby = useLobbyStore((s) => s.open);
   const invitationTarget = useInvitationStore((s) => s.target);
   const openInvitation = useInvitationStore((s) => s.openFor);
   const closeInvitation = useInvitationStore((s) => s.close);
@@ -74,6 +78,14 @@ export function FloorCanvas({
       console.error("[FloorCanvas] updateStatus failed:", err);
     });
   }, [selfStatus, gateway]);
+
+  // Sync current room id to presence so others can see who is in which room
+  useEffect(() => {
+    const roomId = isVideoOpen ? videoRoomId : undefined;
+    gateway.updateRoom(roomId).catch((err) => {
+      console.error("[FloorCanvas] updateRoom failed:", err);
+    });
+  }, [isVideoOpen, videoRoomId, gateway]);
 
   const handleFloorClick = useCallback(
     (e: React.MouseEvent<HTMLDivElement>) => {
@@ -100,9 +112,9 @@ export function FloorCanvas({
   const handleRoomClick = useCallback(
     (e: React.MouseEvent, roomId: string) => {
       e.stopPropagation();
-      openRoom(roomId);
+      openLobby(roomId);
     },
-    [openRoom]
+    [openLobby]
   );
 
   useEffect(() => {
@@ -221,6 +233,8 @@ export function FloorCanvas({
       )}
 
       <IncomingInvitationModal />
+
+      <MeetingRoomLobby />
     </div>
   );
 }

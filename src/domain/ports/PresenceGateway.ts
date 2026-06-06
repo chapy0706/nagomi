@@ -9,6 +9,7 @@ export type PresencePayload = {
   readonly x: number;
   readonly y: number;
   readonly status: PresenceStatus;
+  readonly currentRoomId?: string;
 };
 
 export type PresenceHandlers = {
@@ -21,5 +22,6 @@ export type PresenceGateway = {
   join(payload: PresencePayload, handlers: PresenceHandlers): Promise<void>;
   updatePosition(x: number, y: number): Promise<void>;
   updateStatus(status: PresenceStatus): Promise<void>;
+  updateRoom(roomId: string | undefined): Promise<void>;
   leave(): Promise<void>;
 };

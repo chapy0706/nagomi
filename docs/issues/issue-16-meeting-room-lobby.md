@@ -1,7 +1,7 @@
 ---
-status: open
+status: closed
 created_at: 2026-05-21
-closed_at:
+closed_at: 2026-06-06
 ---
 
 # issue-16: 会議室入室とロビー画面

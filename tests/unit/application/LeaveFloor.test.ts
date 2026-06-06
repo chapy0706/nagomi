@@ -8,6 +8,7 @@ function makeFakeGateway() {
     join: vi.fn(async () => {}),
     updatePosition: vi.fn(async () => {}),
     updateStatus: vi.fn(async () => {}),
+    updateRoom: vi.fn(async () => {}),
     leave: vi.fn(async () => {
       leaveCount++;
     }),

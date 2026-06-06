@@ -48,6 +48,7 @@ function makeFakeGateway() {
     }),
     updatePosition: vi.fn(async () => {}),
     updateStatus: vi.fn(async () => {}),
+    updateRoom: vi.fn(async () => {}),
     leave: vi.fn(async () => {}),
   };
   return { gateway, joined };
