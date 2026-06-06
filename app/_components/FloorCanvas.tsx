@@ -5,40 +5,31 @@ import { AvatarMarker } from "@/app/_components/AvatarMarker";
 import { IncomingInvitationModal } from "@/app/_components/IncomingInvitationModal";
 import { InvitationModal } from "@/app/_components/InvitationModal";
 import { MeetingRoomLobby } from "@/app/_components/MeetingRoomLobby";
+import { RoomBadge } from "@/app/_components/RoomBadge";
 import { StatusPill } from "@/app/_components/StatusPill";
 import { VideoOverlay } from "@/app/_components/VideoOverlay";
 import { useIncomingInvitations } from "@/app/_hooks/useIncomingInvitations";
 import { useInvitationResponses } from "@/app/_hooks/useInvitationResponses";
 import { usePresence } from "@/app/_hooks/usePresence";
+import { useRoomActivities } from "@/app/_hooks/useRoomActivities";
 import { useThrottledMove } from "@/app/_hooks/useThrottledMove";
+import { TOPIC_ROOM_LABELS } from "@/app/_lib/topicStyle";
 import { useInvitationStore } from "@/app/_stores/invitationStore";
 import { useLobbyStore } from "@/app/_stores/lobbyStore";
 import { selectPresenceList, usePresenceStore } from "@/app/_stores/presenceStore";
+import { useRoomSessionStore } from "@/app/_stores/roomSessionStore";
 import { useSelfPositionStore } from "@/app/_stores/selfPositionStore";
 import { selectEffectiveStatus, useSelfStatusStore } from "@/app/_stores/selfStatusStore";
 import { useVideoStore } from "@/app/_stores/videoStore";
 import { buildFloor, DEFAULT_FLOOR_LAYOUT } from "@/src/domain/config/floorLayout";
-import type { MeetingRoomTopic } from "@/src/domain/entities/MeetingRoom";
 import { createSupabaseBrowserClient } from "@/src/infrastructure/supabase/browserClient";
 import { SupabasePresenceGateway } from "@/src/infrastructure/supabase/SupabasePresenceGateway";
 
 const FLOOR_WIDTH = DEFAULT_FLOOR_LAYOUT.width;
 const FLOOR_HEIGHT = DEFAULT_FLOOR_LAYOUT.height;
 const ARROW_STEP = 40;
-const ROOM_W = 120;
-const ROOM_H = 80;
-
-const TOPIC_LABELS: Record<MeetingRoomTopic, string> = {
-  counseling: "相談室",
-  casual: "雑談室",
-  meeting: "会議室",
-};
-
-const TOPIC_COLORS: Record<MeetingRoomTopic, string> = {
-  counseling: "bg-indigo-100 border-indigo-400 text-indigo-800",
-  casual: "bg-green-100 border-green-400 text-green-800",
-  meeting: "bg-blue-100 border-blue-400 text-blue-800",
-};
+const ROOM_W = 140;
+const ROOM_H = 96;
 
 type FloorCanvasProps = {
   authUserId: string;
@@ -57,9 +48,12 @@ export function FloorCanvas({
   const gateway = useMemo(() => new SupabasePresenceGateway(supabase), [supabase]);
   const floor = useMemo(() => buildFloor(DEFAULT_FLOOR_LAYOUT), []);
 
+  const meetingRoomIds = useMemo(() => floor.meetingRooms.map((r) => r.id), [floor]);
+
   usePresence(authUserId, gateway);
   useIncomingInvitations(authUserId);
   useInvitationResponses(authUserId);
+  useRoomActivities(meetingRoomIds);
   const move = useThrottledMove(floor, gateway);
 
   const presences = usePresenceStore(selectPresenceList);
@@ -71,6 +65,8 @@ export function FloorCanvas({
   const invitationTarget = useInvitationStore((s) => s.target);
   const openInvitation = useInvitationStore((s) => s.openFor);
   const closeInvitation = useInvitationStore((s) => s.close);
+  const beginSession = useRoomSessionStore((s) => s.beginSession);
+  const endSession = useRoomSessionStore((s) => s.endSession);
 
   // Sync local status changes to presence gateway
   useEffect(() => {
@@ -86,6 +82,26 @@ export function FloorCanvas({
       console.error("[FloorCanvas] updateRoom failed:", err);
     });
   }, [isVideoOpen, videoRoomId, gateway]);
+
+  const participantCountsByRoom = useMemo(() => {
+    const counts = new Map<string, number>();
+    for (const p of presences) {
+      if (p.currentRoomId) {
+        counts.set(p.currentRoomId, (counts.get(p.currentRoomId) ?? 0) + 1);
+      }
+    }
+    return counts;
+  }, [presences]);
+
+  // 部屋に1人目が入ったら開始、0人に戻ったら終了を記録する
+  useEffect(() => {
+    const now = new Date();
+    for (const roomId of meetingRoomIds) {
+      const count = participantCountsByRoom.get(roomId) ?? 0;
+      if (count > 0) beginSession(roomId, now);
+      else endSession(roomId);
+    }
+  }, [participantCountsByRoom, meetingRoomIds, beginSession, endSession]);
 
   const handleFloorClick = useCallback(
     (e: React.MouseEvent<HTMLDivElement>) => {
@@ -167,7 +183,7 @@ export function FloorCanvas({
             <button
               key={room.id}
               type="button"
-              className={`absolute flex flex-col items-center justify-center border-2 rounded-lg text-xs font-semibold cursor-pointer select-none ${TOPIC_COLORS[room.topic]}`}
+              className="absolute cursor-pointer"
               style={{
                 left: room.position.x - ROOM_W / 2,
                 top: room.position.y - ROOM_H / 2,
@@ -175,9 +191,14 @@ export function FloorCanvas({
                 height: ROOM_H,
               }}
               onClick={(e) => handleRoomClick(e, room.id)}
-              aria-label={`${TOPIC_LABELS[room.topic]}に入室`}
+              aria-label={`${TOPIC_ROOM_LABELS[room.topic]}に入室`}
             >
-              <span>{TOPIC_LABELS[room.topic]}</span>
+              <RoomBadge
+                roomId={room.id}
+                topic={room.topic}
+                participantCount={participantCountsByRoom.get(room.id) ?? 0}
+                capacityMax={room.capacity.max}
+              />
             </button>
           ))}
 

@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { AvatarImage } from "@/app/_components/AvatarImage";
+import { TOPIC_BUTTON_LABELS } from "@/app/_lib/topicStyle";
 import {
   type IncomingInvitation,
   useIncomingInvitationStore,
@@ -9,17 +10,10 @@ import {
 import { useVideoStore } from "@/app/_stores/videoStore";
 import { AcceptCallInvitation } from "@/src/application/use-cases/AcceptCallInvitation";
 import { DeclineCallInvitation } from "@/src/application/use-cases/DeclineCallInvitation";
-import type { InvitationTopic } from "@/src/domain/entities/CallInvitation";
 import { SystemClock } from "@/src/infrastructure/SystemClock";
 import { createSupabaseBrowserClient } from "@/src/infrastructure/supabase/browserClient";
 import { SupabaseCallInvitationRepository } from "@/src/infrastructure/supabase/SupabaseCallInvitationRepository";
 import { SupabaseInvitationBroadcastGateway } from "@/src/infrastructure/supabase/SupabaseInvitationBroadcastGateway";
-
-const TOPIC_LABELS: Record<InvitationTopic, string> = {
-  casual: "雑談",
-  counseling: "相談",
-  meeting: "打ち合わせ",
-};
 
 type Phase = "idle" | "processing";
 
@@ -127,7 +121,7 @@ function IncomingInvitationModalInner({ invitation }: { invitation: IncomingInvi
           <p className="text-xs text-gray-500">さんから声がかかっています</p>
           {invitation.topic && (
             <span className="px-2 py-0.5 mt-1 rounded-full text-xs font-medium bg-indigo-50 text-indigo-700 border border-indigo-200">
-              {TOPIC_LABELS[invitation.topic]}
+              {TOPIC_BUTTON_LABELS[invitation.topic]}
             </span>
           )}
         </div>

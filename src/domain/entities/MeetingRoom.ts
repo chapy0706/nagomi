@@ -1,9 +1,9 @@
+import { CallTopic, type CallTopicKind } from "@/src/domain/value-objects/CallTopic";
 import type { Position } from "@/src/domain/value-objects/Position";
 import type { RoomCapacity } from "@/src/domain/value-objects/RoomCapacity";
 
-export type MeetingRoomTopic = "counseling" | "casual" | "meeting";
+export type MeetingRoomTopic = CallTopicKind;
 
-const VALID_TOPICS: ReadonlySet<MeetingRoomTopic> = new Set(["counseling", "casual", "meeting"]);
 const MEETING_ROOM_MIN_MAX_CAPACITY = 5;
 
 export class MeetingRoom {
@@ -28,7 +28,7 @@ export class MeetingRoom {
         `MeetingRoom の定員上限は${MEETING_ROOM_MIN_MAX_CAPACITY}人以上です: max=${capacity.max}`
       );
     }
-    if (!VALID_TOPICS.has(topic)) {
+    if (!CallTopic.isValidKind(topic)) {
       throw new Error(`無効なトピックです: ${topic}`);
     }
     return new MeetingRoom(id, position, capacity, topic);

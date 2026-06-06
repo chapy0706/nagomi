@@ -8,6 +8,7 @@ export type VideoRoomConfig = {
 export type VideoRoomEventHandlers = {
   readonly onParticipantJoined?: (participantId: string) => void;
   readonly onParticipantLeft?: (participantId: string) => void;
+  readonly onDominantSpeakerChanged?: (participantId: string) => void;
   readonly onReadyToClose: () => void;
 };
 

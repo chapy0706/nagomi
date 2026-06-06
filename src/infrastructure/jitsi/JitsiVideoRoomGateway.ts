@@ -101,6 +101,11 @@ export class JitsiVideoRoomGateway implements VideoRoomGateway {
           events.onParticipantLeft(data.id);
         }
       },
+      dominantSpeakerChanged: (data: unknown) => {
+        if (events.onDominantSpeakerChanged && isParticipantEvent(data)) {
+          events.onDominantSpeakerChanged(data.id);
+        }
+      },
     });
   }
 

@@ -3,14 +3,15 @@
 import { useState } from "react";
 import { AvatarImage } from "@/app/_components/AvatarImage";
 import { useIssueInvitation } from "@/app/_hooks/useIssueInvitation";
+import { TOPIC_BUTTON_LABELS } from "@/app/_lib/topicStyle";
 import type { InvitationTarget } from "@/app/_stores/invitationStore";
 import type { InvitationTopic } from "@/src/domain/entities/CallInvitation";
+import { CallTopic } from "@/src/domain/value-objects/CallTopic";
 
-const TOPIC_OPTIONS: { value: InvitationTopic; label: string }[] = [
-  { value: "casual", label: "雑談" },
-  { value: "counseling", label: "相談" },
-  { value: "meeting", label: "打ち合わせ" },
-];
+const TOPIC_OPTIONS: { value: InvitationTopic; label: string }[] = CallTopic.KINDS.map((kind) => ({
+  value: kind,
+  label: TOPIC_BUTTON_LABELS[kind],
+}));
 
 const REASON_MESSAGES: Record<string, string> = {
   invitee_unavailable: "相手は現在取り込み中または通話中です",

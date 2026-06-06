@@ -1,7 +1,7 @@
 ---
-status: open
+status: closed
 created_at: 2026-05-21
-closed_at:
+closed_at: 2026-06-06
 ---
 
 # issue-17: トピック種別の選択と会話可視化

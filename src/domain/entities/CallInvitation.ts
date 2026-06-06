@@ -1,5 +1,7 @@
+import type { CallTopicKind } from "@/src/domain/value-objects/CallTopic";
+
 export type CallInvitationStatus = "pending" | "accepted" | "declined" | "expired";
-export type InvitationTopic = "counseling" | "casual" | "meeting";
+export type InvitationTopic = CallTopicKind;
 
 const EXPIRY_SECONDS = 30;
 

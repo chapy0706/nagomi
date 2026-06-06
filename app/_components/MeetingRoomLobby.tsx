@@ -3,21 +3,15 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { AvatarImage } from "@/app/_components/AvatarImage";
 import { useMediaPreview } from "@/app/_hooks/useMediaPreview";
+import { TOPIC_ROOM_LABELS } from "@/app/_lib/topicStyle";
 import { useDevicePreferenceStore } from "@/app/_stores/devicePreferenceStore";
 import { useLobbyStore } from "@/app/_stores/lobbyStore";
 import { selectPresenceList, usePresenceStore } from "@/app/_stores/presenceStore";
 import { useVideoStore } from "@/app/_stores/videoStore";
 import { EnterMeetingRoom } from "@/src/application/use-cases/EnterMeetingRoom";
 import { buildFloor, DEFAULT_FLOOR_LAYOUT } from "@/src/domain/config/floorLayout";
-import type { MeetingRoomTopic } from "@/src/domain/entities/MeetingRoom";
 
 const LOBBY_TIMEOUT_MS = 5 * 60 * 1000;
-
-const TOPIC_LABELS: Record<MeetingRoomTopic, string> = {
-  counseling: "相談室",
-  casual: "雑談室",
-  meeting: "会議室",
-};
 
 export function MeetingRoomLobby() {
   const roomId = useLobbyStore((s) => s.roomId);
@@ -86,7 +80,7 @@ function MeetingRoomLobbyInner({ roomId }: { roomId: string }) {
   };
 
   const isFull = !validation.success && validation.reason === "full";
-  const topicLabel = validation.success ? TOPIC_LABELS[validation.room.topic] : "会議室";
+  const topicLabel = validation.success ? TOPIC_ROOM_LABELS[validation.room.topic] : "会議室";
 
   return (
     <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/60 p-4">
