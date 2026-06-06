@@ -7,4 +7,6 @@ export type CallInvitationRepository = {
     inviteeAuthId: string,
     since: Date
   ): Promise<CallInvitation | undefined>;
+  markAccepted(invitationId: string): Promise<void>;
+  markDeclined(invitationId: string): Promise<void>;
 };

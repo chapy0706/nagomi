@@ -74,4 +74,20 @@ export class SupabaseCallInvitationRepository implements CallInvitationRepositor
     if (!data) return undefined;
     return parseRow(data);
   }
+
+  async markAccepted(invitationId: string): Promise<void> {
+    const { error } = await this.supabase
+      .from("call_invitations")
+      .update({ status: "accepted" })
+      .eq("id", invitationId);
+    if (error) throw new Error(`招待の承諾記録に失敗しました: ${error.message}`);
+  }
+
+  async markDeclined(invitationId: string): Promise<void> {
+    const { error } = await this.supabase
+      .from("call_invitations")
+      .update({ status: "declined" })
+      .eq("id", invitationId);
+    if (error) throw new Error(`招待の辞退記録に失敗しました: ${error.message}`);
+  }
 }

@@ -1,7 +1,7 @@
 ---
-status: open
+status: closed
 created_at: 2026-05-21
-closed_at:
+closed_at: 2026-06-06
 ---
 
 # issue-15: 招待の承諾・拒否・失効処理

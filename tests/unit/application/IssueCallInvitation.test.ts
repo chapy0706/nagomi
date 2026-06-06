@@ -16,11 +16,18 @@ function makeRepo(recent?: CallInvitation): CallInvitationRepository {
   return {
     save: vi.fn(async () => {}),
     findRecentByParticipants: vi.fn(async () => recent),
+    markAccepted: vi.fn(async () => {}),
+    markDeclined: vi.fn(async () => {}),
   };
 }
 
 function makeBroadcast(): InvitationBroadcastGateway {
-  return { broadcastInvitation: vi.fn(async () => {}) };
+  return {
+    broadcastInvitation: vi.fn(async () => {}),
+    broadcastAcceptance: vi.fn(async () => {}),
+    subscribeToInvitations: vi.fn(async () => () => {}),
+    subscribeToAcceptances: vi.fn(async () => () => {}),
+  };
 }
 
 function makeBlockRepo(blocked = false): BlockRepository {
@@ -48,7 +55,7 @@ describe("IssueCallInvitation", () => {
     expect(repo.save).toHaveBeenCalledOnce();
     expect(broadcast.broadcastInvitation).toHaveBeenCalledWith(
       "auth-b",
-      expect.objectContaining({ inviterDisplayName: "Alice" })
+      expect.objectContaining({ inviterDisplayName: "Alice", inviterAuthId: "auth-a" })
     );
   });
 

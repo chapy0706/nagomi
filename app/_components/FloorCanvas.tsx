@@ -2,9 +2,12 @@
 
 import { useCallback, useEffect, useMemo } from "react";
 import { AvatarMarker } from "@/app/_components/AvatarMarker";
+import { IncomingInvitationModal } from "@/app/_components/IncomingInvitationModal";
 import { InvitationModal } from "@/app/_components/InvitationModal";
 import { StatusPill } from "@/app/_components/StatusPill";
 import { VideoOverlay } from "@/app/_components/VideoOverlay";
+import { useIncomingInvitations } from "@/app/_hooks/useIncomingInvitations";
+import { useInvitationResponses } from "@/app/_hooks/useInvitationResponses";
 import { usePresence } from "@/app/_hooks/usePresence";
 import { useThrottledMove } from "@/app/_hooks/useThrottledMove";
 import { useInvitationStore } from "@/app/_stores/invitationStore";
@@ -53,6 +56,8 @@ export function FloorCanvas({
   const floor = useMemo(() => buildFloor(DEFAULT_FLOOR_LAYOUT), []);
 
   usePresence(authUserId, gateway);
+  useIncomingInvitations(authUserId);
+  useInvitationResponses(authUserId);
   const move = useThrottledMove(floor, gateway);
 
   const presences = usePresenceStore(selectPresenceList);
@@ -214,6 +219,8 @@ export function FloorCanvas({
           onClose={closeInvitation}
         />
       )}
+
+      <IncomingInvitationModal />
     </div>
   );
 }

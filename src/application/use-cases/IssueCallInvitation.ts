@@ -71,6 +71,7 @@ export class IssueCallInvitation {
 
     await this.broadcastGateway.broadcastInvitation(input.inviteeAuthId, {
       id: invitation.id,
+      inviterAuthId: invitation.inviterAuthId,
       inviterDisplayName: invitation.inviterDisplayName,
       inviterAvatarUrl: invitation.inviterAvatarUrl,
       topic: invitation.topic,
