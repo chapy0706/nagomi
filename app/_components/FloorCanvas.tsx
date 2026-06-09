@@ -8,6 +8,7 @@ import { MeetingRoomLobby } from "@/app/_components/MeetingRoomLobby";
 import { RoomBadge } from "@/app/_components/RoomBadge";
 import { StatusPill } from "@/app/_components/StatusPill";
 import { VideoOverlay } from "@/app/_components/VideoOverlay";
+import { useBlockedAuthIds } from "@/app/_hooks/useBlockedAuthIds";
 import { useIncomingInvitations } from "@/app/_hooks/useIncomingInvitations";
 import { useInvitationResponses } from "@/app/_hooks/useInvitationResponses";
 import { usePresence } from "@/app/_hooks/usePresence";
@@ -53,6 +54,7 @@ export function FloorCanvas({
   usePresence(authUserId, gateway);
   useIncomingInvitations(authUserId);
   useInvitationResponses(authUserId);
+  const blockedAuthIds = useBlockedAuthIds(authUserId);
   useRoomActivities(meetingRoomIds);
   const move = useThrottledMove(floor, gateway);
 
@@ -211,6 +213,7 @@ export function FloorCanvas({
               x={p.x}
               y={p.y}
               status={p.status}
+              isBlocked={p.authUserId ? blockedAuthIds.has(p.authUserId) : false}
               onClick={
                 p.authUserId
                   ? () =>

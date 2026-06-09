@@ -31,7 +31,13 @@ function makeBroadcast(): InvitationBroadcastGateway {
 }
 
 function makeBlockRepo(blocked = false): BlockRepository {
-  return { isBlocked: vi.fn(async () => blocked) };
+  return {
+    isBlocked: vi.fn(async () => blocked),
+    block: vi.fn(async () => {}),
+    unblock: vi.fn(async () => {}),
+    findBlockedAuthIds: vi.fn(async () => []),
+    findBlockedSummaries: vi.fn(async () => []),
+  };
 }
 
 const BASE_INPUT = {
@@ -135,5 +141,16 @@ describe("IssueCallInvitation", () => {
 
     const expectedSince = new Date(FIXED_NOW.getTime() - 60_000);
     expect(repo.findRecentByParticipants).toHaveBeenCalledWith("auth-a", "auth-b", expectedSince);
+  });
+
+  it("isBlocked の引数順が invitee, inviter の順になっている", async () => {
+    const blockRepo = makeBlockRepo(false);
+    const useCase = new IssueCallInvitation(makeRepo(), makeBroadcast(), blockRepo, makeClock());
+
+    await useCase.execute(BASE_INPUT);
+
+    // BASE_INPUT: inviterAuthId="auth-a", inviteeAuthId="auth-b"
+    // 「被招待者(auth-b)が招待者(auth-a)をブロックしているか」の確認
+    expect(blockRepo.isBlocked).toHaveBeenCalledWith("auth-b", "auth-a");
   });
 });

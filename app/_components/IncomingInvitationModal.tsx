@@ -8,6 +8,7 @@ import {
   useIncomingInvitationStore,
 } from "@/app/_stores/incomingInvitationStore";
 import { useVideoStore } from "@/app/_stores/videoStore";
+import { blockEmployeeAction } from "@/app/actions/block";
 import { AcceptCallInvitation } from "@/src/application/use-cases/AcceptCallInvitation";
 import { DeclineCallInvitation } from "@/src/application/use-cases/DeclineCallInvitation";
 import { SystemClock } from "@/src/infrastructure/SystemClock";
@@ -96,10 +97,16 @@ function IncomingInvitationModalInner({ invitation }: { invitation: IncomingInvi
   };
 
   const handleBlock = async () => {
-    // issue-18 でブロック機能が実装されるまでは辞退と同じ挙動。
-    // 招待者には通知されないため、UX としてはブロックを選んでも矛盾しない。
-    // TODO(issue-18): BlockRepository.block(inviteeAuthId, inviterAuthId) を呼ぶ
-    await handleDecline();
+    if (phase !== "idle") return;
+    setPhase("processing");
+    try {
+      await blockEmployeeAction(invitation.inviterAuthId);
+      await declineUseCase.execute({ invitationId: invitation.id });
+    } catch (err) {
+      console.error("[IncomingInvitationModal] block failed:", err);
+    } finally {
+      dismissCurrent();
+    }
   };
 
   return (

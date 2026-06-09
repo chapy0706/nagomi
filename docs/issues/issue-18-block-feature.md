@@ -1,7 +1,7 @@
 ---
-status: open
+status: closed
 created_at: 2026-05-21
-closed_at:
+closed_at: 2026-06-09
 ---
 
 # issue-18: ブロック機能（BlockRelation）

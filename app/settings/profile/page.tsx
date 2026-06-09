@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createSupabaseAdminClient } from "@/src/infrastructure/supabase/adminClient";
 import { SupabaseEmployeeRepository } from "@/src/infrastructure/supabase/SupabaseEmployeeRepository";
@@ -32,6 +33,17 @@ export default async function ProfilePage() {
       <section className="rounded-xl bg-white p-6 shadow-sm">
         <h2 className="mb-4 text-base font-medium text-gray-800">表示名</h2>
         <DisplayNameForm currentDisplayName={emp?.displayName ?? employee.displayName} />
+      </section>
+
+      <section className="mt-4 rounded-xl bg-white p-6 shadow-sm">
+        <h2 className="mb-1 text-base font-medium text-gray-800">ブロックリスト</h2>
+        <p className="mb-4 text-sm text-gray-500">ブロックしたユーザーの管理</p>
+        <Link
+          href="/settings/blocks"
+          className="text-sm text-indigo-600 hover:text-indigo-800 font-medium transition-colors"
+        >
+          ブロックリストを管理 →
+        </Link>
       </section>
     </main>
   );

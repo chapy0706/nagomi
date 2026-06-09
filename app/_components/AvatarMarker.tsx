@@ -9,6 +9,7 @@ type AvatarMarkerProps = {
   y: number;
   status?: PresenceStatus;
   isSelf?: boolean;
+  isBlocked?: boolean;
   onClick?: () => void;
 };
 
@@ -62,13 +63,16 @@ export function AvatarMarker({
   y,
   status,
   isSelf,
+  isBlocked,
   onClick,
 }: AvatarMarkerProps) {
+  const blockedStyle = isBlocked ? "opacity-40 grayscale" : "";
+
   if (!isSelf && onClick) {
     return (
       <button
         type="button"
-        className="absolute flex flex-col items-center z-0 pointer-events-auto cursor-pointer select-none"
+        className={`absolute flex flex-col items-center z-0 pointer-events-auto cursor-pointer select-none ${blockedStyle}`}
         style={baseStyle(x, y)}
         onClick={(e) => {
           e.stopPropagation();
@@ -88,7 +92,7 @@ export function AvatarMarker({
 
   return (
     <div
-      className={`absolute flex flex-col items-center pointer-events-none select-none ${isSelf ? "z-10" : "z-0"}`}
+      className={`absolute flex flex-col items-center pointer-events-none select-none ${isSelf ? "z-10" : "z-0"} ${blockedStyle}`}
       style={baseStyle(x, y)}
     >
       <AvatarInner

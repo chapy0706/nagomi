@@ -6,7 +6,7 @@ import type { InvitationTopic } from "@/src/domain/entities/CallInvitation";
 import type { PresenceStatus } from "@/src/domain/ports/PresenceGateway";
 import { SystemClock } from "@/src/infrastructure/SystemClock";
 import { createSupabaseBrowserClient } from "@/src/infrastructure/supabase/browserClient";
-import { NullBlockRepository } from "@/src/infrastructure/supabase/NullBlockRepository";
+import { SupabaseBlockRepository } from "@/src/infrastructure/supabase/SupabaseBlockRepository";
 import { SupabaseCallInvitationRepository } from "@/src/infrastructure/supabase/SupabaseCallInvitationRepository";
 import { SupabaseInvitationBroadcastGateway } from "@/src/infrastructure/supabase/SupabaseInvitationBroadcastGateway";
 
@@ -27,7 +27,7 @@ export function useIssueInvitation(params: {
       new IssueCallInvitation(
         new SupabaseCallInvitationRepository(supabase),
         new SupabaseInvitationBroadcastGateway(supabase),
-        new NullBlockRepository(),
+        new SupabaseBlockRepository(supabase),
         SystemClock
       ),
     [supabase]

@@ -41,7 +41,8 @@ export class IssueCallInvitation {
       return { success: false, reason: "invitee_unavailable" };
     }
 
-    const blocked = await this.blockRepository.isBlocked(input.inviterAuthId, input.inviteeAuthId);
+    // 被招待者が招待者をブロックしているか確認する（invitee, inviter の順）
+    const blocked = await this.blockRepository.isBlocked(input.inviteeAuthId, input.inviterAuthId);
     if (blocked) {
       return { success: false, reason: "blocked" };
     }

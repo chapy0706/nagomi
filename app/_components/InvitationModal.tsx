@@ -5,6 +5,7 @@ import { AvatarImage } from "@/app/_components/AvatarImage";
 import { useIssueInvitation } from "@/app/_hooks/useIssueInvitation";
 import { TOPIC_BUTTON_LABELS } from "@/app/_lib/topicStyle";
 import type { InvitationTarget } from "@/app/_stores/invitationStore";
+import { blockEmployeeAction } from "@/app/actions/block";
 import type { InvitationTopic } from "@/src/domain/entities/CallInvitation";
 import { CallTopic } from "@/src/domain/value-objects/CallTopic";
 
@@ -36,7 +37,7 @@ export function InvitationModal({
   onClose,
 }: Props) {
   const [topic, setTopic] = useState<InvitationTopic | undefined>(undefined);
-  const [phase, setPhase] = useState<"idle" | "sending" | "sent" | "error">("idle");
+  const [phase, setPhase] = useState<"idle" | "sending" | "sent" | "error" | "blocking">("idle");
   const [errorMessage, setErrorMessage] = useState<string | undefined>();
 
   const { issue } = useIssueInvitation({
@@ -148,6 +149,21 @@ export function InvitationModal({
                 {phase === "sending" ? "送信中..." : "招待する"}
               </button>
             </div>
+            <button
+              type="button"
+              className="w-full py-1.5 text-xs text-gray-400 hover:text-gray-600 transition-colors disabled:opacity-50"
+              disabled={phase === "blocking"}
+              onClick={async () => {
+                setPhase("blocking");
+                try {
+                  await blockEmployeeAction(target.authUserId);
+                } finally {
+                  onClose();
+                }
+              }}
+            >
+              この人をブロックする
+            </button>
           </>
         )}
       </div>
