@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { DailyActiveUsersChart } from "@/app/admin/_components/DailyActiveUsersChart";
 import { DailyCallsChart } from "@/app/admin/_components/DailyCallsChart";
+import { DeletionAuditTable } from "@/app/admin/_components/DeletionAuditTable";
 import { HourlyHeatmap } from "@/app/admin/_components/HourlyHeatmap";
 import { ReportSummaryChart } from "@/app/admin/_components/ReportSummaryChart";
 import { SatisfactionChart } from "@/app/admin/_components/SatisfactionChart";
@@ -22,6 +23,12 @@ type SatisfactionRow = {
   avg_rating: number | null;
   avg_nps_score: number | null;
 };
+type DeletionAuditRow = {
+  executed_at: string;
+  table_name: string;
+  deleted_count: number;
+  retention_months: number;
+};
 
 export default async function AdminDashboard() {
   const serverClient = await createSupabaseServerClient();
@@ -41,17 +48,27 @@ export default async function AdminDashboard() {
   if (!emp?.is_admin) redirect("/");
 
   // 集計ビューからデータを取得
-  const [activeUsersRes, heatmapRes, callsRes, topicRes, reportRes, satisfactionRes] =
-    await Promise.all([
-      adminClient.from("v_admin_daily_active_users").select("day, active_users"),
-      adminClient.from("v_admin_hourly_heatmap").select("day_of_week, hour, sessions"),
-      adminClient.from("v_admin_daily_calls").select("day, call_count"),
-      adminClient.from("v_admin_topic_distribution").select("topic, call_count"),
-      adminClient.from("v_admin_report_summary").select("category, report_count, distinct_targets"),
-      adminClient
-        .from("v_admin_satisfaction_summary")
-        .select("week, survey_type, count, avg_rating, avg_nps_score"),
-    ]);
+  const [
+    activeUsersRes,
+    heatmapRes,
+    callsRes,
+    topicRes,
+    reportRes,
+    satisfactionRes,
+    deletionAuditRes,
+  ] = await Promise.all([
+    adminClient.from("v_admin_daily_active_users").select("day, active_users"),
+    adminClient.from("v_admin_hourly_heatmap").select("day_of_week, hour, sessions"),
+    adminClient.from("v_admin_daily_calls").select("day, call_count"),
+    adminClient.from("v_admin_topic_distribution").select("topic, call_count"),
+    adminClient.from("v_admin_report_summary").select("category, report_count, distinct_targets"),
+    adminClient
+      .from("v_admin_satisfaction_summary")
+      .select("week, survey_type, count, avg_rating, avg_nps_score"),
+    adminClient
+      .from("v_admin_deletion_audit")
+      .select("executed_at, table_name, deleted_count, retention_months"),
+  ]);
 
   const dailyActiveUsers = (activeUsersRes.data ?? []) as DailyActiveUser[];
   const hourlyHeatmap = (heatmapRes.data ?? []) as HeatmapPoint[];
@@ -59,6 +76,7 @@ export default async function AdminDashboard() {
   const topicDistribution = (topicRes.data ?? []) as TopicCount[];
   const reportSummary = (reportRes.data ?? []) as ReportCount[];
   const satisfactionSummary = (satisfactionRes.data ?? []) as SatisfactionRow[];
+  const deletionAudit = (deletionAuditRes.data ?? []) as DeletionAuditRow[];
 
   // サマリ集計
   const totalCalls = dailyCalls.reduce((s, r) => s + r.call_count, 0);
@@ -158,6 +176,18 @@ export default async function AdminDashboard() {
               人（重複あり）
             </p>
           )}
+        </section>
+
+        {/* ログ削除バッチ実行履歴（全幅） */}
+        <section className="rounded-xl bg-white p-6 shadow-sm border border-gray-100">
+          <h2 className="text-sm font-semibold text-gray-700 mb-1">
+            ログ削除バッチ実行履歴
+            <span className="ml-2 text-xs font-normal text-gray-400">直近90日・最新50件</span>
+          </h2>
+          <p className="text-xs text-gray-400 mb-4">
+            毎週月曜 03:00 JST に自動実行。削除件数のみを記録し、個人情報は含みません。
+          </p>
+          <DeletionAuditTable data={deletionAudit} />
         </section>
       </div>
     </main>

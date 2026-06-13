@@ -22,6 +22,7 @@ help:
 	@echo "  db/new name=X  マイグレーションファイル新規作成"
 	@echo "  db/reset       ローカル DB をリセット（migration + seed 再適用）"
 	@echo "  db/seed-dev    テストアカウントを hosted Supabase に作成（.env.local 必要）"
+	@echo "  db/run-deletion ログ削除バッチを手動実行（ローカル Supabase）"
 	@echo ""
 	@echo "  verify         全チェック（lint + type-check + test）"
 	@echo "  evidence       verify + カバレッジ出力"
@@ -110,6 +111,10 @@ db/reset:
 db/seed-dev:
 	@if [ ! -f .env.local ]; then echo "エラー: .env.local が見つかりません" && exit 1; fi
 	node --env-file=.env.local scripts/seed-dev-account.mjs
+
+.PHONY: db/run-deletion
+db/run-deletion:
+	psql postgresql://postgres:postgres@localhost:54322/postgres -f supabase/scripts/run-log-deletion.sql
 
 
 # ------------------------

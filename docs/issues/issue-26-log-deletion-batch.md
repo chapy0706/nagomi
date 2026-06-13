@@ -1,7 +1,7 @@
 ---
-status: open
+status: closed
 created_at: 2026-05-21
-closed_at:
+closed_at: 2026-06-13
 ---
 
 # issue-26: ログ自動削除バッチ（週次月曜深夜3時・3ヶ月経過判定）
