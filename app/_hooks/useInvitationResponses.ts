@@ -2,8 +2,8 @@
 
 import { useEffect, useMemo } from "react";
 import { useVideoStore } from "@/app/_stores/videoStore";
+import { createInvitationGateway } from "@/src/infrastructure/realtimeGatewayFactory";
 import { createSupabaseBrowserClient } from "@/src/infrastructure/supabase/browserClient";
-import { SupabaseInvitationBroadcastGateway } from "@/src/infrastructure/supabase/SupabaseInvitationBroadcastGateway";
 
 /**
  * 招待者側で、自分が送った招待への承諾通知を購読する。
@@ -12,7 +12,7 @@ import { SupabaseInvitationBroadcastGateway } from "@/src/infrastructure/supabas
  */
 export function useInvitationResponses(authUserId: string): void {
   const supabase = useMemo(() => createSupabaseBrowserClient(), []);
-  const gateway = useMemo(() => new SupabaseInvitationBroadcastGateway(supabase), [supabase]);
+  const gateway = useMemo(() => createInvitationGateway(supabase), [supabase]);
   const openRoom = useVideoStore((s) => s.open);
 
   useEffect(() => {

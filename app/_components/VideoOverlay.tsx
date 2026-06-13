@@ -8,8 +8,8 @@ import { recordCallJoinAction } from "@/app/actions/callParticipation";
 import { DEFAULT_FLOOR_LAYOUT } from "@/src/domain/config/floorLayout";
 import type { CallTopicKind } from "@/src/domain/value-objects/CallTopic";
 import { JitsiVideoRoomGateway } from "@/src/infrastructure/jitsi/JitsiVideoRoomGateway";
+import { createRoomActivityGateway } from "@/src/infrastructure/realtimeGatewayFactory";
 import { createSupabaseBrowserClient } from "@/src/infrastructure/supabase/browserClient";
-import { SupabaseRoomActivityGateway } from "@/src/infrastructure/supabase/SupabaseRoomActivityGateway";
 
 type VideoOverlayProps = {
   authUserId: string;
@@ -33,7 +33,7 @@ export function VideoOverlay({ authUserId: _authUserId, displayName }: VideoOver
   const exitCall = useSelfStatusStore((s) => s.exitCall);
 
   const supabase = useMemo(() => createSupabaseBrowserClient(), []);
-  const activityGateway = useMemo(() => new SupabaseRoomActivityGateway(supabase), [supabase]);
+  const activityGateway = useMemo(() => createRoomActivityGateway(supabase), [supabase]);
 
   useWakeLock(isOpen);
 

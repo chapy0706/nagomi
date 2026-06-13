@@ -1,0 +1,18 @@
+# 開発用: ソースをボリュームマウントして gleam run / gleam test できる環境
+# aarch64 ネイティブ動作（エミュレーション不要）
+FROM erlang:27-bookworm
+
+ARG GLEAM_VERSION=1.7.0
+
+RUN apt-get update && apt-get install -y curl tar && \
+    curl -L "https://github.com/gleam-lang/gleam/releases/download/v${GLEAM_VERSION}/gleam-v${GLEAM_VERSION}-aarch64-unknown-linux-musl.tar.gz" \
+      -o /tmp/gleam.tar.gz && \
+    tar -xzf /tmp/gleam.tar.gz -C /usr/local/bin && \
+    rm /tmp/gleam.tar.gz && \
+    apt-get clean && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+
+EXPOSE 3001
+
+CMD ["gleam", "run"]

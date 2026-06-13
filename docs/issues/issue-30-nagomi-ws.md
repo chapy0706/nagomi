@@ -1,7 +1,7 @@
 ---
-status: open
+status: closed
 created_at: 2026-06-13
-closed_at:
+closed_at: 2026-06-13
 ---
 
   # Claude Code への指示書: nagomi-ws（Gleam/OTP WebSocket サーバー）

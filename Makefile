@@ -23,6 +23,9 @@ help:
 	@echo "  db/reset       ローカル DB をリセット（migration + seed 再適用）"
 	@echo "  db/seed-dev    テストアカウントを hosted Supabase に作成（.env.local 必要）"
 	@echo "  db/run-deletion ログ削除バッチを手動実行（ローカル Supabase）"
+	@echo "  ws/dev         nagomi-ws 開発コンテナ起動（Docker Compose）"
+	@echo "  ws/build       nagomi-ws 本番イメージビルド"
+	@echo "  ws/test        nagomi-ws Gleam テスト実行（コンテナ内）"
 	@echo ""
 	@echo "  verify         全チェック（lint + type-check + test）"
 	@echo "  evidence       verify + カバレッジ出力"
@@ -115,6 +118,22 @@ db/seed-dev:
 .PHONY: db/run-deletion
 db/run-deletion:
 	psql postgresql://postgres:postgres@localhost:54322/postgres -f supabase/scripts/run-log-deletion.sql
+
+# ------------------------
+# nagomi-ws (Gleam WebSocket server)
+# ------------------------
+
+.PHONY: ws/dev
+ws/dev:
+	docker compose -f nagomi-ws/docker-compose.yml up
+
+.PHONY: ws/build
+ws/build:
+	docker compose -f nagomi-ws/docker-compose.yml build
+
+.PHONY: ws/test
+ws/test:
+	docker compose -f nagomi-ws/docker-compose.yml run --rm nagomi-ws gleam test
 
 
 # ------------------------

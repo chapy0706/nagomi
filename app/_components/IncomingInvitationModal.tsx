@@ -12,10 +12,10 @@ import { useVideoStore } from "@/app/_stores/videoStore";
 import { blockEmployeeAction } from "@/app/actions/block";
 import { AcceptCallInvitation } from "@/src/application/use-cases/AcceptCallInvitation";
 import { DeclineCallInvitation } from "@/src/application/use-cases/DeclineCallInvitation";
+import { createInvitationGateway } from "@/src/infrastructure/realtimeGatewayFactory";
 import { SystemClock } from "@/src/infrastructure/SystemClock";
 import { createSupabaseBrowserClient } from "@/src/infrastructure/supabase/browserClient";
 import { SupabaseCallInvitationRepository } from "@/src/infrastructure/supabase/SupabaseCallInvitationRepository";
-import { SupabaseInvitationBroadcastGateway } from "@/src/infrastructure/supabase/SupabaseInvitationBroadcastGateway";
 
 type Phase = "idle" | "processing";
 
@@ -40,7 +40,7 @@ function IncomingInvitationModalInner({ invitation }: { invitation: IncomingInvi
     () =>
       new AcceptCallInvitation(
         new SupabaseCallInvitationRepository(supabase),
-        new SupabaseInvitationBroadcastGateway(supabase),
+        createInvitationGateway(supabase),
         SystemClock
       ),
     [supabase]

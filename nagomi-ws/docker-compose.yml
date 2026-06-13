@@ -1,0 +1,18 @@
+services:
+  nagomi-ws:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    volumes:
+      - .:/app
+      # ビルド成果物はコンテナ内でキャッシュ（ホスト側と分離）
+      - nagomi_ws_build:/app/build
+    ports:
+      - "3001:3001"
+    environment:
+      PORT: "3001"
+      # Supabase JWT 検証用: 本番では Coolify の環境変数で上書く
+      JWT_SECRET: "${JWT_SECRET:-insecure-dev-secret}"
+
+volumes:
+  nagomi_ws_build:

@@ -2,8 +2,8 @@
 
 import { useEffect, useMemo } from "react";
 import { useIncomingInvitationStore } from "@/app/_stores/incomingInvitationStore";
+import { createInvitationGateway } from "@/src/infrastructure/realtimeGatewayFactory";
 import { createSupabaseBrowserClient } from "@/src/infrastructure/supabase/browserClient";
-import { SupabaseInvitationBroadcastGateway } from "@/src/infrastructure/supabase/SupabaseInvitationBroadcastGateway";
 
 const PRUNE_INTERVAL_MS = 1000;
 
@@ -13,7 +13,7 @@ const PRUNE_INTERVAL_MS = 1000;
  */
 export function useIncomingInvitations(authUserId: string): void {
   const supabase = useMemo(() => createSupabaseBrowserClient(), []);
-  const gateway = useMemo(() => new SupabaseInvitationBroadcastGateway(supabase), [supabase]);
+  const gateway = useMemo(() => createInvitationGateway(supabase), [supabase]);
 
   const enqueue = useIncomingInvitationStore((s) => s.enqueue);
   const pruneExpired = useIncomingInvitationStore((s) => s.pruneExpired);

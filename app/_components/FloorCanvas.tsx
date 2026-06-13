@@ -30,8 +30,8 @@ import { selectEffectiveStatus, useSelfStatusStore } from "@/app/_stores/selfSta
 import { useSurveyStore } from "@/app/_stores/surveyStore";
 import { useVideoStore } from "@/app/_stores/videoStore";
 import { buildFloor, DEFAULT_FLOOR_LAYOUT } from "@/src/domain/config/floorLayout";
+import { createPresenceGateway } from "@/src/infrastructure/realtimeGatewayFactory";
 import { createSupabaseBrowserClient } from "@/src/infrastructure/supabase/browserClient";
-import { SupabasePresenceGateway } from "@/src/infrastructure/supabase/SupabasePresenceGateway";
 
 const FLOOR_WIDTH = DEFAULT_FLOOR_LAYOUT.width;
 const FLOOR_HEIGHT = DEFAULT_FLOOR_LAYOUT.height;
@@ -53,7 +53,7 @@ export function FloorCanvas({
   selfAvatarUrl,
 }: FloorCanvasProps) {
   const supabase = useMemo(() => createSupabaseBrowserClient(), []);
-  const gateway = useMemo(() => new SupabasePresenceGateway(supabase), [supabase]);
+  const gateway = useMemo(() => createPresenceGateway(supabase), [supabase]);
   const floor = useMemo(() => buildFloor(DEFAULT_FLOOR_LAYOUT), []);
 
   const meetingRoomIds = useMemo(() => floor.meetingRooms.map((r) => r.id), [floor]);

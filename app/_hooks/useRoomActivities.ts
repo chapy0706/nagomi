@@ -2,15 +2,15 @@
 
 import { useEffect, useMemo } from "react";
 import { useRoomActivityStore } from "@/app/_stores/roomActivityStore";
+import { createRoomActivityGateway } from "@/src/infrastructure/realtimeGatewayFactory";
 import { createSupabaseBrowserClient } from "@/src/infrastructure/supabase/browserClient";
-import { SupabaseRoomActivityGateway } from "@/src/infrastructure/supabase/SupabaseRoomActivityGateway";
 
 /**
  * 与えられた roomIds に対応する活動状況のブロードキャストを購読し、ストアに反映する。
  */
 export function useRoomActivities(roomIds: ReadonlyArray<string>): void {
   const supabase = useMemo(() => createSupabaseBrowserClient(), []);
-  const gateway = useMemo(() => new SupabaseRoomActivityGateway(supabase), [supabase]);
+  const gateway = useMemo(() => createRoomActivityGateway(supabase), [supabase]);
   const updateActivity = useRoomActivityStore((s) => s.updateActivity);
   const clearActivity = useRoomActivityStore((s) => s.clearActivity);
 

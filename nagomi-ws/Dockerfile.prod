@@ -1,0 +1,32 @@
+# 本番用: gleam export erlang-shipment でリリースビルドし、
+# 最小イメージに配置する 2 ステージビルド
+FROM erlang:27-bookworm AS builder
+
+ARG GLEAM_VERSION=1.7.0
+
+RUN apt-get update && apt-get install -y curl tar && \
+    curl -L "https://github.com/gleam-lang/gleam/releases/download/v${GLEAM_VERSION}/gleam-v${GLEAM_VERSION}-aarch64-unknown-linux-musl.tar.gz" \
+      -o /tmp/gleam.tar.gz && \
+    tar -xzf /tmp/gleam.tar.gz -C /usr/local/bin && \
+    rm /tmp/gleam.tar.gz && \
+    apt-get clean && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+COPY gleam.toml manifest.toml* ./
+# 依存だけ先にキャッシュ
+RUN gleam deps download
+
+COPY src/ ./src/
+COPY test/ ./test/
+RUN gleam export erlang-shipment
+
+# ランタイムステージ: Erlang だけ入った軽量イメージ
+FROM erlang:27-slim AS runtime
+
+WORKDIR /app
+COPY --from=builder /app/build/erlang-shipment ./
+
+EXPOSE 3001
+
+ENTRYPOINT ["/app/entrypoint.sh"]
+CMD ["run", "nagomi_ws"]

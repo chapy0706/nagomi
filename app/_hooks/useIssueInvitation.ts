@@ -4,11 +4,11 @@ import { useMemo } from "react";
 import { IssueCallInvitation } from "@/src/application/use-cases/IssueCallInvitation";
 import type { InvitationTopic } from "@/src/domain/entities/CallInvitation";
 import type { PresenceStatus } from "@/src/domain/ports/PresenceGateway";
+import { createInvitationGateway } from "@/src/infrastructure/realtimeGatewayFactory";
 import { SystemClock } from "@/src/infrastructure/SystemClock";
 import { createSupabaseBrowserClient } from "@/src/infrastructure/supabase/browserClient";
 import { SupabaseBlockRepository } from "@/src/infrastructure/supabase/SupabaseBlockRepository";
 import { SupabaseCallInvitationRepository } from "@/src/infrastructure/supabase/SupabaseCallInvitationRepository";
-import { SupabaseInvitationBroadcastGateway } from "@/src/infrastructure/supabase/SupabaseInvitationBroadcastGateway";
 
 type IssueParams = {
   inviteeAuthId: string;
@@ -26,7 +26,7 @@ export function useIssueInvitation(params: {
     () =>
       new IssueCallInvitation(
         new SupabaseCallInvitationRepository(supabase),
-        new SupabaseInvitationBroadcastGateway(supabase),
+        createInvitationGateway(supabase),
         new SupabaseBlockRepository(supabase),
         SystemClock
       ),
