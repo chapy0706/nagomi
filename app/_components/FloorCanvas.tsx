@@ -5,6 +5,7 @@ import { AvatarMarker } from "@/app/_components/AvatarMarker";
 import { IncomingInvitationModal } from "@/app/_components/IncomingInvitationModal";
 import { InvitationModal } from "@/app/_components/InvitationModal";
 import { MeetingRoomLobby } from "@/app/_components/MeetingRoomLobby";
+import { NpsSurveyModal } from "@/app/_components/NpsSurveyModal";
 import { ReportModal } from "@/app/_components/ReportModal";
 import { RoomBadge } from "@/app/_components/RoomBadge";
 import { StatusPill } from "@/app/_components/StatusPill";
@@ -16,6 +17,7 @@ import { useInvitationResponses } from "@/app/_hooks/useInvitationResponses";
 import { usePresence } from "@/app/_hooks/usePresence";
 import { useRoomActivities } from "@/app/_hooks/useRoomActivities";
 import { useThrottledMove } from "@/app/_hooks/useThrottledMove";
+import { shouldShowNpsSurvey } from "@/app/_lib/surveySchedule";
 import { TOPIC_ROOM_LABELS } from "@/app/_lib/topicStyle";
 import { useInvitationStore } from "@/app/_stores/invitationStore";
 import { useLobbyStore } from "@/app/_stores/lobbyStore";
@@ -24,6 +26,7 @@ import { useReportStore } from "@/app/_stores/reportStore";
 import { useRoomSessionStore } from "@/app/_stores/roomSessionStore";
 import { useSelfPositionStore } from "@/app/_stores/selfPositionStore";
 import { selectEffectiveStatus, useSelfStatusStore } from "@/app/_stores/selfStatusStore";
+import { useSurveyStore } from "@/app/_stores/surveyStore";
 import { useVideoStore } from "@/app/_stores/videoStore";
 import { buildFloor, DEFAULT_FLOOR_LAYOUT } from "@/src/domain/config/floorLayout";
 import { createSupabaseBrowserClient } from "@/src/infrastructure/supabase/browserClient";
@@ -75,6 +78,14 @@ export function FloorCanvas({
   const closeReport = useReportStore((s) => s.close);
   const beginSession = useRoomSessionStore((s) => s.beginSession);
   const endSession = useRoomSessionStore((s) => s.endSession);
+  const isNpsOpen = useSurveyStore((s) => s.isNpsOpen);
+  const openNps = useSurveyStore((s) => s.openNps);
+  const closeNps = useSurveyStore((s) => s.close);
+
+  // NPS アンケートの表示チェック（月1回）
+  useEffect(() => {
+    if (shouldShowNpsSurvey()) openNps();
+  }, [openNps]);
 
   // Sync local status changes to presence gateway
   useEffect(() => {
@@ -265,6 +276,8 @@ export function FloorCanvas({
       <IncomingInvitationModal />
 
       {reportTarget && <ReportModal target={reportTarget} onClose={closeReport} />}
+
+      {isNpsOpen && <NpsSurveyModal onClose={closeNps} />}
 
       <MeetingRoomLobby />
     </div>

@@ -3,6 +3,7 @@ import { DailyActiveUsersChart } from "@/app/admin/_components/DailyActiveUsersC
 import { DailyCallsChart } from "@/app/admin/_components/DailyCallsChart";
 import { HourlyHeatmap } from "@/app/admin/_components/HourlyHeatmap";
 import { ReportSummaryChart } from "@/app/admin/_components/ReportSummaryChart";
+import { SatisfactionChart } from "@/app/admin/_components/SatisfactionChart";
 import { TopicPieChart } from "@/app/admin/_components/TopicPieChart";
 import { createSupabaseAdminClient } from "@/src/infrastructure/supabase/adminClient";
 import { createSupabaseServerClient } from "@/src/infrastructure/supabase/serverClient";
@@ -14,6 +15,13 @@ type HeatmapPoint = { day_of_week: number; hour: number; sessions: number };
 type DailyCall = { day: string; call_count: number };
 type TopicCount = { topic: string; call_count: number };
 type ReportCount = { category: string; report_count: number; distinct_targets: number };
+type SatisfactionRow = {
+  week: string;
+  survey_type: string;
+  count: number;
+  avg_rating: number | null;
+  avg_nps_score: number | null;
+};
 
 export default async function AdminDashboard() {
   const serverClient = await createSupabaseServerClient();
@@ -33,19 +41,24 @@ export default async function AdminDashboard() {
   if (!emp?.is_admin) redirect("/");
 
   // 集計ビューからデータを取得
-  const [activeUsersRes, heatmapRes, callsRes, topicRes, reportRes] = await Promise.all([
-    adminClient.from("v_admin_daily_active_users").select("day, active_users"),
-    adminClient.from("v_admin_hourly_heatmap").select("day_of_week, hour, sessions"),
-    adminClient.from("v_admin_daily_calls").select("day, call_count"),
-    adminClient.from("v_admin_topic_distribution").select("topic, call_count"),
-    adminClient.from("v_admin_report_summary").select("category, report_count, distinct_targets"),
-  ]);
+  const [activeUsersRes, heatmapRes, callsRes, topicRes, reportRes, satisfactionRes] =
+    await Promise.all([
+      adminClient.from("v_admin_daily_active_users").select("day, active_users"),
+      adminClient.from("v_admin_hourly_heatmap").select("day_of_week, hour, sessions"),
+      adminClient.from("v_admin_daily_calls").select("day, call_count"),
+      adminClient.from("v_admin_topic_distribution").select("topic, call_count"),
+      adminClient.from("v_admin_report_summary").select("category, report_count, distinct_targets"),
+      adminClient
+        .from("v_admin_satisfaction_summary")
+        .select("week, survey_type, count, avg_rating, avg_nps_score"),
+    ]);
 
   const dailyActiveUsers = (activeUsersRes.data ?? []) as DailyActiveUser[];
   const hourlyHeatmap = (heatmapRes.data ?? []) as HeatmapPoint[];
   const dailyCalls = (callsRes.data ?? []) as DailyCall[];
   const topicDistribution = (topicRes.data ?? []) as TopicCount[];
   const reportSummary = (reportRes.data ?? []) as ReportCount[];
+  const satisfactionSummary = (satisfactionRes.data ?? []) as SatisfactionRow[];
 
   // サマリ集計
   const totalCalls = dailyCalls.reduce((s, r) => s + r.call_count, 0);
@@ -116,6 +129,16 @@ export default async function AdminDashboard() {
             <span className="ml-2 text-xs font-normal text-gray-400">直近30日のログイン分布</span>
           </h2>
           <HourlyHeatmap data={hourlyHeatmap} />
+        </section>
+
+        {/* 満足度サマリ（全幅） */}
+        <section className="rounded-xl bg-white p-6 shadow-sm border border-gray-100">
+          <h2 className="text-sm font-semibold text-gray-700 mb-1">
+            満足度推移
+            <span className="ml-2 text-xs font-normal text-gray-400">直近90日・週次</span>
+          </h2>
+          <p className="text-xs text-gray-400 mb-4">回答者の個人情報は含みません</p>
+          <SatisfactionChart data={satisfactionSummary} />
         </section>
 
         {/* 通報集計（全幅） */}
