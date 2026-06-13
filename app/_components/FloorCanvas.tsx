@@ -9,6 +9,7 @@ import { ReportModal } from "@/app/_components/ReportModal";
 import { RoomBadge } from "@/app/_components/RoomBadge";
 import { StatusPill } from "@/app/_components/StatusPill";
 import { VideoOverlay } from "@/app/_components/VideoOverlay";
+import { useAttendanceLogout } from "@/app/_hooks/useAttendanceLogout";
 import { useBlockedAuthIds } from "@/app/_hooks/useBlockedAuthIds";
 import { useIncomingInvitations } from "@/app/_hooks/useIncomingInvitations";
 import { useInvitationResponses } from "@/app/_hooks/useInvitationResponses";
@@ -53,6 +54,7 @@ export function FloorCanvas({
 
   const meetingRoomIds = useMemo(() => floor.meetingRooms.map((r) => r.id), [floor]);
 
+  useAttendanceLogout();
   usePresence(authUserId, gateway);
   useIncomingInvitations(authUserId);
   useInvitationResponses(authUserId);

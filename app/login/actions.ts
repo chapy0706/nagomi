@@ -2,7 +2,10 @@
 
 import { redirect } from "next/navigation";
 import { AuthenticateEmployee } from "@/src/application/use-cases/AuthenticateEmployee";
+import { RecordLogin } from "@/src/application/use-cases/RecordLogin";
+import { SystemClock } from "@/src/infrastructure/SystemClock";
 import { createSupabaseAdminClient } from "@/src/infrastructure/supabase/adminClient";
+import { SupabaseAttendanceRepository } from "@/src/infrastructure/supabase/SupabaseAttendanceRepository";
 import { SupabaseAuthGateway } from "@/src/infrastructure/supabase/SupabaseAuthGateway";
 import { SupabaseEmployeeRepository } from "@/src/infrastructure/supabase/SupabaseEmployeeRepository";
 import { createSupabaseServerClient } from "@/src/infrastructure/supabase/serverClient";
@@ -31,6 +34,10 @@ export async function loginAction(_prev: LoginState, formData: FormData): Promis
   if (!result.success) {
     return { errorMessage: result.errorMessage };
   }
+
+  const attendanceRepo = new SupabaseAttendanceRepository(adminClient);
+  const recordLogin = new RecordLogin(attendanceRepo, SystemClock);
+  await recordLogin.execute(result.authUserId);
 
   redirect("/");
 }
