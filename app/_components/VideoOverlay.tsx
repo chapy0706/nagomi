@@ -3,18 +3,26 @@
 import { useEffect, useMemo, useRef } from "react";
 import { useSelfStatusStore } from "@/app/_stores/selfStatusStore";
 import { useVideoStore } from "@/app/_stores/videoStore";
+import { recordCallJoinAction } from "@/app/actions/callParticipation";
+import { DEFAULT_FLOOR_LAYOUT } from "@/src/domain/config/floorLayout";
+import type { CallTopicKind } from "@/src/domain/value-objects/CallTopic";
 import { JitsiVideoRoomGateway } from "@/src/infrastructure/jitsi/JitsiVideoRoomGateway";
 import { createSupabaseBrowserClient } from "@/src/infrastructure/supabase/browserClient";
 import { SupabaseRoomActivityGateway } from "@/src/infrastructure/supabase/SupabaseRoomActivityGateway";
 
 type VideoOverlayProps = {
+  authUserId: string;
   displayName: string;
 };
 
 const ACTIVITY_WINDOW_MS = 30_000;
 const ACTIVITY_BROADCAST_INTERVAL_MS = 5_000;
 
-export function VideoOverlay({ displayName }: VideoOverlayProps) {
+function lookupTopic(roomId: string): CallTopicKind | undefined {
+  return DEFAULT_FLOOR_LAYOUT.meetingRooms.find((r) => r.id === roomId)?.topic;
+}
+
+export function VideoOverlay({ authUserId: _authUserId, displayName }: VideoOverlayProps) {
   const isOpen = useVideoStore((s) => s.isOpen);
   const roomId = useVideoStore((s) => s.roomId);
   const startWithAudioMuted = useVideoStore((s) => s.startWithAudioMuted);
@@ -48,6 +56,14 @@ export function VideoOverlay({ displayName }: VideoOverlayProps) {
           startWithAudioMuted,
         },
         {
+          onConferenceJoined: () => {
+            const topic = lookupTopic(roomId);
+            if (topic) {
+              recordCallJoinAction(roomId, topic).catch((err) => {
+                console.error("[VideoOverlay] recordCallJoin failed:", err);
+              });
+            }
+          },
           onReadyToClose: () => close(),
           onDominantSpeakerChanged: () => {
             speakerEventTimesRef.current.push(Date.now());
@@ -70,6 +86,7 @@ export function VideoOverlay({ displayName }: VideoOverlayProps) {
 
     return () => {
       window.clearInterval(broadcastInterval);
+      navigator.sendBeacon("/api/call-participation/leave");
       gatewayRef.current?.leave();
       gatewayRef.current = undefined;
       speakerEventTimesRef.current = [];

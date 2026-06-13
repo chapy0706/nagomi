@@ -90,6 +90,9 @@ export class JitsiVideoRoomGateway implements VideoRoomGateway {
     });
 
     this.api.addEventListeners({
+      videoConferenceJoined: () => {
+        events.onConferenceJoined?.();
+      },
       readyToClose: () => events.onReadyToClose(),
       participantJoined: (data: unknown) => {
         if (events.onParticipantJoined && isParticipantEvent(data)) {

@@ -249,7 +249,7 @@ export function FloorCanvas({
           )}
         </div>
 
-        <VideoOverlay displayName={selfDisplayName} />
+        <VideoOverlay authUserId={authUserId} displayName={selfDisplayName} />
       </div>
 
       {invitationTarget && (
