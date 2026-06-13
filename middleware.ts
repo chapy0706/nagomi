@@ -42,10 +42,10 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(loginUrl);
   }
 
-  // is_active チェック：RLS により自分のレコードのみ返る
+  // is_active / is_admin チェック：RLS により自分のレコードのみ返る
   const { data: employee } = await supabase
     .from("employees")
-    .select("is_active")
+    .select("is_active, is_admin")
     .eq("auth_user_id", user.id)
     .maybeSingle();
 
@@ -54,6 +54,12 @@ export async function middleware(request: NextRequest) {
     const loginUrl = request.nextUrl.clone();
     loginUrl.pathname = "/login";
     return NextResponse.redirect(loginUrl);
+  }
+
+  if (pathname.startsWith("/admin") && !employee?.is_admin) {
+    const homeUrl = request.nextUrl.clone();
+    homeUrl.pathname = "/";
+    return NextResponse.redirect(homeUrl);
   }
 
   return supabaseResponse;
