@@ -12,6 +12,7 @@ function makeEmployee(overrides?: Partial<Employee>): Employee {
     isActive: true,
     authUserId: "auth-uuid",
     consentAcceptedAt: undefined,
+    tutorialCompletedAt: undefined,
     avatarUrl: undefined,
     ...overrides,
   };
@@ -31,6 +32,7 @@ function makeEmployeeRepository(employee: Employee | undefined): EmployeeReposit
     findByEmployeeId: async () => undefined,
     findByAuthUserId: async () => employee,
     recordConsent: async () => {},
+    completeTutorial: async () => {},
     updateDisplayName: async () => {},
     updateAvatarUrl: async () => {},
   };

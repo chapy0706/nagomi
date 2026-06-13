@@ -31,5 +31,5 @@ export async function consentAction(
     return { errorMessage: result.errorMessage };
   }
 
-  redirect("/");
+  redirect("/onboarding/tutorial");
 }

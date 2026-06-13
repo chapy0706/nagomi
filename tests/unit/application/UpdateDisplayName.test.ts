@@ -11,6 +11,7 @@ function makeEmployee(overrides?: Partial<Employee>): Employee {
     isActive: true,
     authUserId: "auth-uuid",
     consentAcceptedAt: new Date(),
+    tutorialCompletedAt: undefined,
     avatarUrl: undefined,
     ...overrides,
   };
@@ -24,6 +25,7 @@ function makeRepo(
     findByEmployeeId: async () => undefined,
     findByAuthUserId: async () => employee,
     recordConsent: async () => {},
+    completeTutorial: async () => {},
     updateDisplayName: vi.fn(updateFn),
     updateAvatarUrl: async () => {},
   };

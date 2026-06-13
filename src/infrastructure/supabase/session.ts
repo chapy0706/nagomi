@@ -7,6 +7,7 @@ export type SessionEmployee = {
   displayName: string;
   avatarUrl: string | undefined;
   consentAcceptedAt: Date | undefined;
+  tutorialCompletedAt: Date | undefined;
 };
 
 export type SessionContext = {
@@ -22,7 +23,9 @@ export async function getSessionContext(): Promise<SessionContext> {
   const adminClient = createSupabaseAdminClient();
   const { data: row } = await adminClient
     .from("employees")
-    .select("employee_id, display_name, avatar_url, is_active, consent_accepted_at")
+    .select(
+      "employee_id, display_name, avatar_url, is_active, consent_accepted_at, tutorial_completed_at"
+    )
     .eq("auth_user_id", data.user.id)
     .maybeSingle();
 
@@ -39,6 +42,9 @@ export async function getSessionContext(): Promise<SessionContext> {
       avatarUrl: (row.avatar_url as string | null) ?? undefined,
       consentAcceptedAt: row.consent_accepted_at
         ? new Date(row.consent_accepted_at as string)
+        : undefined,
+      tutorialCompletedAt: row.tutorial_completed_at
+        ? new Date(row.tutorial_completed_at as string)
         : undefined,
     },
   };

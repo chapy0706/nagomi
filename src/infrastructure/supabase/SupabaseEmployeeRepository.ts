@@ -10,6 +10,7 @@ type EmployeeRow = {
   is_active: boolean;
   auth_user_id: string | null;
   consent_accepted_at: string | null;
+  tutorial_completed_at: string | null;
   avatar_url: string | null;
 };
 
@@ -21,12 +22,15 @@ function rowToEmployee(row: EmployeeRow): Employee {
     isActive: row.is_active,
     authUserId: row.auth_user_id ?? undefined,
     consentAcceptedAt: row.consent_accepted_at ? new Date(row.consent_accepted_at) : undefined,
+    tutorialCompletedAt: row.tutorial_completed_at
+      ? new Date(row.tutorial_completed_at)
+      : undefined,
     avatarUrl: row.avatar_url ?? undefined,
   };
 }
 
 const SELECT_FIELDS =
-  "id, employee_id, display_name, is_active, auth_user_id, consent_accepted_at, avatar_url";
+  "id, employee_id, display_name, is_active, auth_user_id, consent_accepted_at, tutorial_completed_at, avatar_url";
 
 export class SupabaseEmployeeRepository implements EmployeeRepository {
   constructor(private readonly client: SupabaseClient) {}
@@ -60,6 +64,16 @@ export class SupabaseEmployeeRepository implements EmployeeRepository {
       .eq("employee_id", employeeId.value);
 
     if (error) throw new Error(`同意の記録に失敗しました: ${error.message}`);
+  }
+
+  async completeTutorial(authUserId: string): Promise<void> {
+    const { error } = await this.client
+      .from("employees")
+      .update({ tutorial_completed_at: new Date().toISOString() })
+      .eq("auth_user_id", authUserId)
+      .is("tutorial_completed_at", null);
+
+    if (error) throw new Error(`チュートリアル完了の記録に失敗しました: ${error.message}`);
   }
 
   async updateDisplayName(employeeId: EmployeeId, displayName: DisplayName): Promise<void> {
