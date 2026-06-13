@@ -50,6 +50,11 @@ function IncomingInvitationModalInner({ invitation }: { invitation: IncomingInvi
     [supabase]
   );
 
+  // 招待到着時にバイブレーション（対応デバイスのみ）
+  useEffect(() => {
+    navigator.vibrate?.([200, 100, 200]);
+  }, []);
+
   useEffect(() => {
     const tick = () => {
       const remaining = Math.max(
@@ -117,7 +122,7 @@ function IncomingInvitationModalInner({ invitation }: { invitation: IncomingInvi
         role="dialog"
         aria-modal="true"
         aria-label={`${invitation.inviterDisplayName} からの招待`}
-        className="relative bg-white rounded-2xl shadow-2xl w-80 p-6 flex flex-col gap-4 pointer-events-auto"
+        className="relative bg-white rounded-2xl shadow-2xl w-full max-w-xs sm:max-w-sm p-6 flex flex-col gap-4 pointer-events-auto mx-4"
       >
         <div className="flex flex-col items-center gap-2">
           <AvatarImage
@@ -138,7 +143,7 @@ function IncomingInvitationModalInner({ invitation }: { invitation: IncomingInvi
         <div className="flex flex-col gap-2">
           <button
             type="button"
-            className="w-full py-2.5 rounded-lg bg-indigo-500 text-white text-sm font-semibold hover:bg-indigo-600 transition-colors disabled:opacity-50"
+            className="w-full min-h-[44px] py-2.5 rounded-lg bg-indigo-500 text-white text-sm font-semibold hover:bg-indigo-600 transition-colors disabled:opacity-50"
             onClick={handleAccept}
             disabled={phase !== "idle"}
           >
@@ -146,7 +151,7 @@ function IncomingInvitationModalInner({ invitation }: { invitation: IncomingInvi
           </button>
           <button
             type="button"
-            className="w-full py-2.5 rounded-lg bg-gray-100 text-gray-700 text-sm font-medium hover:bg-gray-200 transition-colors disabled:opacity-50"
+            className="w-full min-h-[44px] py-2.5 rounded-lg bg-gray-100 text-gray-700 text-sm font-medium hover:bg-gray-200 transition-colors disabled:opacity-50"
             onClick={handleDecline}
             disabled={phase !== "idle"}
           >

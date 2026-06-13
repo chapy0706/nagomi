@@ -125,7 +125,7 @@ function MeetingRoomLobbyInner({ roomId }: { roomId: string }) {
               <button
                 type="button"
                 onClick={() => setMicEnabled((v) => !v)}
-                className={`flex-1 py-2 rounded-lg text-sm font-medium transition-colors ${
+                className={`flex-1 min-h-[44px] py-2 rounded-lg text-sm font-medium transition-colors ${
                   micEnabled
                     ? "bg-indigo-500 text-white hover:bg-indigo-600"
                     : "bg-gray-100 text-gray-700 hover:bg-gray-200"
@@ -137,7 +137,7 @@ function MeetingRoomLobbyInner({ roomId }: { roomId: string }) {
               <button
                 type="button"
                 onClick={() => setCameraEnabled((v) => !v)}
-                className={`flex-1 py-2 rounded-lg text-sm font-medium transition-colors ${
+                className={`flex-1 min-h-[44px] py-2 rounded-lg text-sm font-medium transition-colors ${
                   cameraEnabled
                     ? "bg-indigo-500 text-white hover:bg-indigo-600"
                     : "bg-gray-100 text-gray-700 hover:bg-gray-200"
@@ -223,7 +223,7 @@ function MeetingRoomLobbyInner({ roomId }: { roomId: string }) {
           <button
             type="button"
             onClick={closeLobby}
-            className="px-4 py-2 rounded-lg bg-gray-100 text-gray-700 text-sm font-medium hover:bg-gray-200 transition-colors"
+            className="min-h-[44px] px-4 py-2 rounded-lg bg-gray-100 text-gray-700 text-sm font-medium hover:bg-gray-200 transition-colors"
           >
             キャンセル
           </button>
@@ -231,7 +231,7 @@ function MeetingRoomLobbyInner({ roomId }: { roomId: string }) {
             type="button"
             onClick={handleJoin}
             disabled={!validation.success}
-            className="px-4 py-2 rounded-lg bg-indigo-500 text-white text-sm font-semibold hover:bg-indigo-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className="min-h-[44px] px-4 py-2 rounded-lg bg-indigo-500 text-white text-sm font-semibold hover:bg-indigo-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             参加する
           </button>

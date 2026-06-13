@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef } from "react";
+import { useWakeLock } from "@/app/_hooks/useWakeLock";
 import { useSelfStatusStore } from "@/app/_stores/selfStatusStore";
 import { useVideoStore } from "@/app/_stores/videoStore";
 import { recordCallJoinAction } from "@/app/actions/callParticipation";
@@ -33,6 +34,8 @@ export function VideoOverlay({ authUserId: _authUserId, displayName }: VideoOver
 
   const supabase = useMemo(() => createSupabaseBrowserClient(), []);
   const activityGateway = useMemo(() => new SupabaseRoomActivityGateway(supabase), [supabase]);
+
+  useWakeLock(isOpen);
 
   const containerRef = useRef<HTMLDivElement>(null);
   const gatewayRef = useRef<JitsiVideoRoomGateway | undefined>(undefined);

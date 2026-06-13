@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useCallback, useEffect, useMemo } from "react";
 import { AvatarMarker } from "@/app/_components/AvatarMarker";
 import { IncomingInvitationModal } from "@/app/_components/IncomingInvitationModal";
@@ -183,9 +184,32 @@ export function FloorCanvas({
 
   return (
     <div className="relative w-full h-full flex flex-col">
-      <div className="flex items-center gap-4 px-4 py-2 bg-white border-b border-gray-200 shrink-0">
-        <span className="text-sm font-medium text-gray-900">{selfDisplayName}</span>
+      <div className="flex items-center gap-3 px-4 py-2 bg-white border-b border-gray-200 shrink-0">
+        <span className="text-sm font-medium text-gray-900 truncate max-w-[120px] sm:max-w-none">
+          {selfDisplayName}
+        </span>
         <StatusPill />
+        <Link
+          href="/settings/profile"
+          aria-label="設定を開く"
+          className="ml-auto flex items-center justify-center min-w-[44px] min-h-[44px] rounded-md text-gray-500 hover:bg-gray-100 hover:text-gray-700 transition-colors"
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="20"
+            height="20"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            aria-hidden="true"
+          >
+            <circle cx="12" cy="12" r="3" />
+            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
+          </svg>
+        </Link>
       </div>
 
       <div className="overflow-auto flex-1 relative">
