@@ -5,6 +5,7 @@ import { AvatarMarker } from "@/app/_components/AvatarMarker";
 import { IncomingInvitationModal } from "@/app/_components/IncomingInvitationModal";
 import { InvitationModal } from "@/app/_components/InvitationModal";
 import { MeetingRoomLobby } from "@/app/_components/MeetingRoomLobby";
+import { ReportModal } from "@/app/_components/ReportModal";
 import { RoomBadge } from "@/app/_components/RoomBadge";
 import { StatusPill } from "@/app/_components/StatusPill";
 import { VideoOverlay } from "@/app/_components/VideoOverlay";
@@ -18,6 +19,7 @@ import { TOPIC_ROOM_LABELS } from "@/app/_lib/topicStyle";
 import { useInvitationStore } from "@/app/_stores/invitationStore";
 import { useLobbyStore } from "@/app/_stores/lobbyStore";
 import { selectPresenceList, usePresenceStore } from "@/app/_stores/presenceStore";
+import { useReportStore } from "@/app/_stores/reportStore";
 import { useRoomSessionStore } from "@/app/_stores/roomSessionStore";
 import { useSelfPositionStore } from "@/app/_stores/selfPositionStore";
 import { selectEffectiveStatus, useSelfStatusStore } from "@/app/_stores/selfStatusStore";
@@ -67,6 +69,8 @@ export function FloorCanvas({
   const invitationTarget = useInvitationStore((s) => s.target);
   const openInvitation = useInvitationStore((s) => s.openFor);
   const closeInvitation = useInvitationStore((s) => s.close);
+  const reportTarget = useReportStore((s) => s.target);
+  const closeReport = useReportStore((s) => s.close);
   const beginSession = useRoomSessionStore((s) => s.beginSession);
   const endSession = useRoomSessionStore((s) => s.endSession);
 
@@ -257,6 +261,8 @@ export function FloorCanvas({
       )}
 
       <IncomingInvitationModal />
+
+      {reportTarget && <ReportModal target={reportTarget} onClose={closeReport} />}
 
       <MeetingRoomLobby />
     </div>

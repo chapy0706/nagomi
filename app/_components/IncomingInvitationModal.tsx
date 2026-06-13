@@ -7,6 +7,7 @@ import {
   type IncomingInvitation,
   useIncomingInvitationStore,
 } from "@/app/_stores/incomingInvitationStore";
+import { useReportStore } from "@/app/_stores/reportStore";
 import { useVideoStore } from "@/app/_stores/videoStore";
 import { blockEmployeeAction } from "@/app/actions/block";
 import { AcceptCallInvitation } from "@/src/application/use-cases/AcceptCallInvitation";
@@ -28,6 +29,7 @@ export function IncomingInvitationModal() {
 function IncomingInvitationModalInner({ invitation }: { invitation: IncomingInvitation }) {
   const dismissCurrent = useIncomingInvitationStore((s) => s.dismissCurrent);
   const openRoom = useVideoStore((s) => s.open);
+  const openReport = useReportStore((s) => s.openFor);
   const [phase, setPhase] = useState<Phase>("idle");
   const [secondsLeft, setSecondsLeft] = useState(() =>
     Math.max(0, Math.ceil((invitation.expiresAt.getTime() - Date.now()) / 1000))
@@ -150,14 +152,31 @@ function IncomingInvitationModalInner({ invitation }: { invitation: IncomingInvi
           >
             今はやめておく
           </button>
-          <button
-            type="button"
-            className="w-full py-1.5 text-xs text-gray-400 hover:text-gray-600 transition-colors disabled:opacity-50"
-            onClick={handleBlock}
-            disabled={phase !== "idle"}
-          >
-            この人をブロックする
-          </button>
+          <div className="flex justify-center gap-4">
+            <button
+              type="button"
+              className="py-1.5 text-xs text-gray-400 hover:text-gray-600 transition-colors disabled:opacity-50"
+              onClick={handleBlock}
+              disabled={phase !== "idle"}
+            >
+              ブロックする
+            </button>
+            <button
+              type="button"
+              className="py-1.5 text-xs text-gray-400 hover:text-red-500 transition-colors disabled:opacity-50"
+              onClick={() => {
+                dismissCurrent();
+                openReport({
+                  authUserId: invitation.inviterAuthId,
+                  displayName: invitation.inviterDisplayName,
+                  avatarUrl: invitation.inviterAvatarUrl,
+                });
+              }}
+              disabled={phase !== "idle"}
+            >
+              通報する
+            </button>
+          </div>
         </div>
 
         <p className="text-center text-xs text-gray-400" aria-live="polite">
