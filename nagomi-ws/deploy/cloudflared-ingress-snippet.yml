@@ -1,0 +1,35 @@
+# /etc/cloudflared/config.yml への追記スニペット
+#
+# 使い方:
+#   既存の ingress リスト の末尾（catch-all より前）に以下を追加する。
+#   ホスト名は自分のドメインに変える（例: ws.nagomi.example.com）。
+#
+# WebSocket 対応について:
+#   Cloudflare Tunnel は WebSocket を自動でサポートする（特別な設定不要）。
+#   HTTP Upgrade ヘッダーはトンネル経由でそのまま通る。
+#
+# Traefik (Coolify) について:
+#   Coolify の Traefik も WebSocket Upgrade ヘッダーをデフォルトで通す。
+#   追加ラベルは不要。ただし以下を確認すること:
+#     - Coolify の Service で "Port" を 3001 に設定
+#     - "Expose Port" は不要（Coolify 内部ネットワーク経由で Traefik が転送）
+
+# ---- /etc/cloudflared/config.yml の ingress に追加する行 ----
+#
+# ingress:
+#   # ---- 既存のエントリ（消さないこと）----
+#   - hostname: nagomi.example.com
+#     service: http://nagomi:3000
+#
+#   # ---- ここを追加 ----
+#   - hostname: ws.nagomi.example.com
+#     service: http://nagomi-ws:3001
+#
+#   # catch-all（必ず最後に置く）
+#   - service: http_status:404
+
+# ---- cloudflared で DNS を登録するコマンド ----
+# sudo cloudflared tunnel route dns <TUNNEL_NAME> ws.nagomi.example.com
+
+# ---- 設定反映 ----
+# sudo systemctl reload cloudflared

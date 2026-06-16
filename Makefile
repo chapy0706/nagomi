@@ -26,6 +26,7 @@ help:
 	@echo "  ws/dev         nagomi-ws 開発コンテナ起動（Docker Compose）"
 	@echo "  ws/build       nagomi-ws 本番イメージビルド"
 	@echo "  ws/test        nagomi-ws Gleam テスト実行（コンテナ内）"
+	@echo "  ws/health      nagomi-ws ヘルスチェック（ローカル）"
 	@echo ""
 	@echo "  verify         全チェック（lint + type-check + test）"
 	@echo "  evidence       verify + カバレッジ出力"
@@ -134,6 +135,10 @@ ws/build:
 .PHONY: ws/test
 ws/test:
 	docker compose -f nagomi-ws/docker-compose.yml run --rm nagomi-ws gleam test
+
+.PHONY: ws/health
+ws/health:
+	curl -sf http://localhost:3001/health && echo " OK" || echo " FAILED"
 
 
 # ------------------------

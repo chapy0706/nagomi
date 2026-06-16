@@ -13,6 +13,8 @@ services:
       PORT: "3001"
       # Supabase JWT 検証用: 本番では Coolify の環境変数で上書く
       JWT_SECRET: "${JWT_SECRET:-insecure-dev-secret}"
+      # 疎通確認時のみ true に設定。本番では必ず未設定または false にする
+      # WS_AUTH_DISABLED: "true"
 
 volumes:
   nagomi_ws_build:
