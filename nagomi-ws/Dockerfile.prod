@@ -4,7 +4,7 @@
 
 FROM erlang:27-alpine AS builder
 
-ARG GLEAM_VERSION=1.7.0
+ARG GLEAM_VERSION=1.14.0
 
 RUN apk add --no-cache curl tar && \
     curl -L "https://github.com/gleam-lang/gleam/releases/download/v${GLEAM_VERSION}/gleam-v${GLEAM_VERSION}-aarch64-unknown-linux-musl.tar.gz" \
