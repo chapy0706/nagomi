@@ -1,15 +1,16 @@
 # 本番用: gleam export erlang-shipment でリリースビルドし、
 # 最小イメージに配置する 2 ステージビルド
-FROM erlang:27-bookworm AS builder
+# aarch64 (ARM64) 対応: Alpine + musl 版 Gleam を使用
+
+FROM erlang:27-alpine AS builder
 
 ARG GLEAM_VERSION=1.7.0
 
-RUN apt-get update && apt-get install -y curl tar && \
+RUN apk add --no-cache curl tar && \
     curl -L "https://github.com/gleam-lang/gleam/releases/download/v${GLEAM_VERSION}/gleam-v${GLEAM_VERSION}-aarch64-unknown-linux-musl.tar.gz" \
       -o /tmp/gleam.tar.gz && \
     tar -xzf /tmp/gleam.tar.gz -C /usr/local/bin && \
-    rm /tmp/gleam.tar.gz && \
-    apt-get clean && rm -rf /var/lib/apt/lists/*
+    rm /tmp/gleam.tar.gz
 
 WORKDIR /app
 COPY gleam.toml manifest.toml* ./
@@ -21,7 +22,7 @@ COPY test/ ./test/
 RUN gleam export erlang-shipment
 
 # ランタイムステージ: Erlang だけ入った軽量イメージ
-FROM erlang:27-slim AS runtime
+FROM erlang:27-alpine AS runtime
 
 WORKDIR /app
 COPY --from=builder /app/build/erlang-shipment ./
