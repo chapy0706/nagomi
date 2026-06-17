@@ -1,5 +1,5 @@
 ARG ERLANG_VERSION=27
-ARG GLEAM_VERSION=v1.12.0
+ARG GLEAM_VERSION=v1.14.0
 
 # Stage 1: 公式 Gleam イメージから gleam バイナリだけ取り出す
 FROM ghcr.io/gleam-lang/gleam:${GLEAM_VERSION}-scratch AS gleam
