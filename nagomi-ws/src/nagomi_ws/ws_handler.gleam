@@ -13,7 +13,7 @@ import gleam/io
 import gleam/list
 import gleam/option.{type Option, None, Some}
 import gleam/otp/actor
-import mist.{type Connection, type WebsocketMessage}
+import mist.{type WebsocketConnection, type WebsocketMessage}
 import nagomi_ws/connection_registry
 import nagomi_ws/invitation_router
 import nagomi_ws/jwt
@@ -63,9 +63,9 @@ fn gen_conn_id() -> String {
 
 pub fn on_open(
   server: ServerState,
-  conn: Connection,
+  conn: WebsocketConnection,
   token_result: Result(String, String),
-) -> #(ConnectionState, process.Selector(OutgoingMessage)) {
+) -> #(ConnectionState, Option(process.Selector(OutgoingMessage))) {
   let auth_user_id = case token_result {
     Ok(uid) -> uid
     Error(reason) -> {
@@ -96,7 +96,7 @@ pub fn on_open(
     )
 
   io.println("[ws_handler] opened: " <> conn_id)
-  #(state, selector)
+  #(state, Some(selector))
 }
 
 pub fn on_close(state: ConnectionState) -> Nil {
@@ -146,9 +146,9 @@ pub fn on_close(state: ConnectionState) -> Nil {
 
 pub fn handler(
   state: ConnectionState,
-  conn: Connection,
+  conn: WebsocketConnection,
   msg: WebsocketMessage(OutgoingMessage),
-) -> actor.Next(OutgoingMessage, ConnectionState) {
+) -> actor.Next(ConnectionState, OutgoingMessage) {
   case msg {
     mist.Text(text) -> handle_client_message(state, conn, text)
     mist.Binary(_) -> actor.continue(state)
@@ -157,6 +157,8 @@ pub fn handler(
       let _ = mist.send_text_frame(conn, text)
       actor.continue(state)
     }
+    // クライアント切断またはサーバーシャットダウン: on_close でクリーンアップ済み
+    mist.Closed | mist.Shutdown -> actor.stop(process.Normal)
   }
 }
 
@@ -166,9 +168,9 @@ pub fn handler(
 
 fn handle_client_message(
   state: ConnectionState,
-  conn: Connection,
+  conn: WebsocketConnection,
   text: String,
-) -> actor.Next(OutgoingMessage, ConnectionState) {
+) -> actor.Next(ConnectionState, OutgoingMessage) {
   // 未認証接続はすべて拒否
   case state.auth_user_id == "" {
     True -> {
@@ -182,9 +184,9 @@ fn handle_client_message(
 
 fn dispatch(
   state: ConnectionState,
-  conn: Connection,
+  conn: WebsocketConnection,
   client_msg: ClientMessage,
-) -> actor.Next(OutgoingMessage, ConnectionState) {
+) -> actor.Next(ConnectionState, OutgoingMessage) {
   case client_msg {
     // ---- Presence --------------------------------------------------------
     PresenceJoin(payload: payload) -> handle_presence_join(state, conn, payload)
@@ -291,9 +293,9 @@ fn dispatch(
 
 fn handle_presence_join(
   state: ConnectionState,
-  conn: Connection,
+  conn: WebsocketConnection,
   payload: PresencePayload,
-) -> actor.Next(OutgoingMessage, ConnectionState) {
+) -> actor.Next(ConnectionState, OutgoingMessage) {
   presence_registry.track(state.server.presence_registry, state.conn_id, payload)
 
   // 新規参加者には全員の現在状態を送信
@@ -313,9 +315,9 @@ fn handle_presence_join(
 
 fn handle_presence_update(
   state: ConnectionState,
-  _conn: Connection,
+  _conn: WebsocketConnection,
   updater: fn(PresencePayload) -> PresencePayload,
-) -> actor.Next(OutgoingMessage, ConnectionState) {
+) -> actor.Next(ConnectionState, OutgoingMessage) {
   case state.presence {
     None -> actor.continue(state)
     Some(current) -> {
@@ -337,7 +339,7 @@ fn handle_presence_update(
 
 fn handle_presence_leave(
   state: ConnectionState,
-) -> actor.Next(OutgoingMessage, ConnectionState) {
+) -> actor.Next(ConnectionState, OutgoingMessage) {
   case state.presence {
     None -> actor.continue(state)
     Some(p) -> {

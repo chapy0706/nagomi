@@ -73,9 +73,9 @@ fn handle_websocket(
 
   mist.websocket(
     request: req,
-    on_open: fn(conn) { ws_handler.on_open(server, conn, token_result) },
+    on_init: fn(conn) { ws_handler.on_open(server, conn, token_result) },
     on_close: fn(state) { ws_handler.on_close(state) },
-    handler: fn(state, conn, msg) { ws_handler.handler(state, conn, msg) },
+    handler: fn(state, msg, conn) { ws_handler.handler(state, conn, msg) },
   )
 }
 

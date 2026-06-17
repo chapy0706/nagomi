@@ -39,7 +39,7 @@ pub fn main() {
   let assert Ok(_) =
     mist.new(router.handle_request(state, _))
     |> mist.port(port)
-    |> mist.start_http
+    |> mist.start
 
   io.println("nagomi-ws started on :" <> int.to_string(port))
   process.sleep_forever()
