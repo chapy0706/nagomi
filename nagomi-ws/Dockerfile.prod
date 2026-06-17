@@ -1,31 +1,26 @@
-# 本番用: gleam export erlang-shipment でリリースビルドし、
-# 最小イメージに配置する 2 ステージビルド
-# aarch64 (ARM64) 対応: Alpine + musl 版 Gleam を使用
+ARG ERLANG_VERSION=27
+ARG GLEAM_VERSION=v1.12.0
 
-FROM erlang:27-alpine AS builder
+# Stage 1: 公式 Gleam イメージから gleam バイナリだけ取り出す
+FROM ghcr.io/gleam-lang/gleam:${GLEAM_VERSION}-scratch AS gleam
 
-ARG GLEAM_VERSION=1.14.0
-
-RUN apk add --no-cache curl tar && \
-    curl -L "https://github.com/gleam-lang/gleam/releases/download/v${GLEAM_VERSION}/gleam-v${GLEAM_VERSION}-aarch64-unknown-linux-musl.tar.gz" \
-      -o /tmp/gleam.tar.gz && \
-    tar -xzf /tmp/gleam.tar.gz -C /usr/local/bin && \
-    rm /tmp/gleam.tar.gz
+# Stage 2: ビルドステージ（Gleam + Erlang）
+FROM erlang:${ERLANG_VERSION}-alpine AS build
+COPY --from=gleam /bin/gleam /bin/gleam
 
 WORKDIR /app
 COPY gleam.toml manifest.toml* ./
-# 依存だけ先にキャッシュ
 RUN gleam deps download
 
 COPY src/ ./src/
 COPY test/ ./test/
 RUN gleam export erlang-shipment
 
-# ランタイムステージ: Erlang だけ入った軽量イメージ
-FROM erlang:27-alpine AS runtime
+# Stage 3: ランタイムステージ（Erlang のみ）
+FROM erlang:${ERLANG_VERSION}-alpine
 
 WORKDIR /app
-COPY --from=builder /app/build/erlang-shipment ./
+COPY --from=build /app/build/erlang-shipment ./
 
 EXPOSE 3001
 

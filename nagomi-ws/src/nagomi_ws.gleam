@@ -5,7 +5,7 @@
 ///   2. mist HTTP サーバーを PORT（デフォルト 3001）で起動
 ///   3. process.sleep_forever() でメインプロセスを生かし続ける
 
-import gleam/erlang/os
+import envoy
 import gleam/erlang/process
 import gleam/int
 import gleam/io
@@ -46,7 +46,7 @@ pub fn main() {
 }
 
 fn get_port() -> Int {
-  case os.get_env("PORT") {
+  case envoy.get("PORT") {
     Ok(p) -> int.parse(p) |> result.unwrap(3001)
     Error(_) -> 3001
   }

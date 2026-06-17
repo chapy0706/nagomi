@@ -12,8 +12,8 @@
 ///     - 環境変数が未設定の状態でデプロイしても認証が有効になる
 ///     - 明示的に "true" と書かなければスキップされない（opt-in bypass）
 
-import gleam/bytes_builder
-import gleam/erlang/os
+import envoy
+import gleam/bytes_tree
 import gleam/http/request.{type Request}
 import gleam/http/response
 import gleam/io
@@ -35,26 +35,26 @@ pub fn handle_request(
     ["health"] -> handle_health()
     _ ->
       response.new(404)
-      |> response.set_body(mist.Bytes(bytes_builder.from_string("Not Found")))
+      |> response.set_body(mist.Bytes(bytes_tree.from_string("Not Found")))
   }
 }
 
 fn handle_health() -> response.Response(ResponseData) {
   response.new(200)
-  |> response.set_body(mist.Bytes(bytes_builder.from_string("OK")))
+  |> response.set_body(mist.Bytes(bytes_tree.from_string("OK")))
 }
 
 fn handle_websocket(
   server: ServerState,
   req: Request(Connection),
 ) -> response.Response(ResponseData) {
-  let jwt_secret = case os.get_env("JWT_SECRET") {
+  let jwt_secret = case envoy.get("JWT_SECRET") {
     Ok(s) -> s
     Error(_) -> ""
   }
 
   // WS_AUTH_DISABLED=true のときだけ検証スキップ。デフォルトは検証あり。
-  let auth_disabled = os.get_env("WS_AUTH_DISABLED") == Ok("true")
+  let auth_disabled = envoy.get("WS_AUTH_DISABLED") == Ok("true")
 
   let token_result = case auth_disabled {
     True -> {

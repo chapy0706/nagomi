@@ -12,11 +12,9 @@
 /// Erlang の :crypto モジュールを FFI 経由で呼ぶ（gleam_erlang に crypto 依存）。
 
 import gleam/bit_array
-import gleam/dynamic
+import gleam/dynamic/decode
 import gleam/erlang/atom
 import gleam/json
-import gleam/list
-import gleam/option.{type Option, None, Some}
 import gleam/result
 import gleam/string
 
@@ -34,8 +32,8 @@ fn erlang_crypto_mac(
 
 fn hmac_sha256(secret: String, data: String) -> BitArray {
   erlang_crypto_mac(
-    atom.create_from_string("hmac"),
-    atom.create_from_string("sha256"),
+    atom.create("hmac"),
+    atom.create("sha256"),
     bit_array.from_string(secret),
     bit_array.from_string(data),
   )
@@ -75,7 +73,10 @@ fn extract_sub(payload_b64: String) -> Result(String, String) {
     bit_array.to_string(payload_bits)
     |> result.map_error(fn(_) { "payload is not valid UTF-8" }),
   )
-  json.decode(payload_str, dynamic.field("sub", dynamic.string))
+  json.parse(from: payload_str, using: {
+    use s <- decode.field("sub", decode.string)
+    decode.success(s)
+  })
   |> result.map_error(fn(_) { "sub claim not found" })
 }
 

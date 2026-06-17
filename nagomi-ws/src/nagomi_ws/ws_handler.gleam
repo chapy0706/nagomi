@@ -7,7 +7,6 @@
 /// ビジネス判断（誰に何を届けるか）はここで行い、
 /// レジストリはデータの保持と転送だけを担う。
 
-import gleam/erlang/os
 import gleam/erlang/process
 import gleam/int
 import gleam/io
@@ -51,12 +50,11 @@ pub type OutgoingMessage =
 // 接続 ID 生成（Erlang ref → 文字列）
 // ---------------------------------------------------------------------------
 
-@external(erlang, "erlang", "make_ref")
-fn make_ref() -> a
+@external(erlang, "erlang", "unique_integer")
+fn unique_integer() -> Int
 
 fn gen_conn_id() -> String {
-  make_ref()
-  |> fn(r) { "conn-" <> string.inspect(r) }
+  "conn-" <> int.to_string(unique_integer())
 }
 
 // ---------------------------------------------------------------------------
@@ -85,7 +83,7 @@ pub fn on_open(
 
   let selector =
     process.new_selector()
-    |> process.selecting(subject, fn(msg) { msg })
+    |> process.select(subject)
 
   let state =
     ConnectionState(
@@ -353,11 +351,3 @@ fn handle_presence_leave(
   }
 }
 
-// ---------------------------------------------------------------------------
-// 文字列 inspect ヘルパー（Erlang term → 文字列）
-// ---------------------------------------------------------------------------
-
-fn string_inspect(value: a) -> String {
-  io.debug(value)
-  ""
-}

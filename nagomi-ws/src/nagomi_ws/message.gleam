@@ -4,12 +4,10 @@
 ///   Gleam は静的型付けなので、Wire フォーマット (JSON) と
 ///   アプリ内の型を明確に分離する。境界でのみ JSON ↔ 型変換を行う。
 
-import gleam/dynamic
+import gleam/dynamic/decode
 import gleam/json
-import gleam/list
 import gleam/option.{type Option, None, Some}
 import gleam/result
-import gleam/string
 
 // ---------------------------------------------------------------------------
 // 共通の値型
@@ -93,38 +91,31 @@ pub type ClientMessage {
 }
 
 // ---------------------------------------------------------------------------
-// JSON デコーダーヘルパー
+// JSON デコーダー（gleam/dynamic/decode API）
 // ---------------------------------------------------------------------------
 
-fn optional_string_field(
-  dyn: dynamic.Dynamic,
-  key: String,
-) -> Result(Option(String), dynamic.DecodeErrors) {
-  dynamic.optional_field(key, dynamic.string)(dyn)
-  |> result.map(fn(opt) { opt })
-}
-
-fn decode_presence_payload(
-  dyn: dynamic.Dynamic,
-) -> Result(PresencePayload, dynamic.DecodeErrors) {
-  use employee_id <- result.try(dynamic.field("employeeId", dynamic.string)(
-    dyn,
-  ))
-  use auth_user_id <- result.try(optional_string_field(dyn, "authUserId"))
-  use display_name <- result.try(dynamic.field(
-    "displayName",
-    dynamic.string,
-  )(dyn))
-  use avatar_url <- result.try(optional_string_field(dyn, "avatarUrl"))
-  use x <- result.try(dynamic.field("x", dynamic.float)(dyn))
-  use y <- result.try(dynamic.field("y", dynamic.float)(dyn))
-  use status_str <- result.try(dynamic.field("status", dynamic.string)(dyn))
-  use current_room_id <- result.try(optional_string_field(
-    dyn,
+fn presence_payload_decoder() -> decode.Decoder(PresencePayload) {
+  use employee_id <- decode.field("employeeId", decode.string)
+  use auth_user_id <- decode.optional_field(
+    "authUserId",
+    None,
+    decode.optional(decode.string),
+  )
+  use display_name <- decode.field("displayName", decode.string)
+  use avatar_url <- decode.optional_field(
+    "avatarUrl",
+    None,
+    decode.optional(decode.string),
+  )
+  use x <- decode.field("x", decode.float)
+  use y <- decode.field("y", decode.float)
+  use status_str <- decode.field("status", decode.string)
+  use current_room_id <- decode.optional_field(
     "currentRoomId",
-  ))
-
-  Ok(PresencePayload(
+    None,
+    decode.optional(decode.string),
+  )
+  decode.success(PresencePayload(
     employee_id: employee_id,
     auth_user_id: auth_user_id,
     display_name: display_name,
@@ -136,26 +127,22 @@ fn decode_presence_payload(
   ))
 }
 
-fn decode_invitation_payload(
-  dyn: dynamic.Dynamic,
-) -> Result(InvitationPayload, dynamic.DecodeErrors) {
-  use id <- result.try(dynamic.field("id", dynamic.string)(dyn))
-  use inviter_auth_id <- result.try(dynamic.field(
-    "inviterAuthId",
-    dynamic.string,
-  )(dyn))
-  use inviter_display_name <- result.try(dynamic.field(
-    "inviterDisplayName",
-    dynamic.string,
-  )(dyn))
-  use inviter_avatar_url <- result.try(optional_string_field(
-    dyn,
+fn invitation_payload_decoder() -> decode.Decoder(InvitationPayload) {
+  use id <- decode.field("id", decode.string)
+  use inviter_auth_id <- decode.field("inviterAuthId", decode.string)
+  use inviter_display_name <- decode.field("inviterDisplayName", decode.string)
+  use inviter_avatar_url <- decode.optional_field(
     "inviterAvatarUrl",
-  ))
-  use topic <- result.try(optional_string_field(dyn, "topic"))
-  use expires_at <- result.try(dynamic.field("expiresAt", dynamic.string)(dyn))
-
-  Ok(InvitationPayload(
+    None,
+    decode.optional(decode.string),
+  )
+  use topic <- decode.optional_field(
+    "topic",
+    None,
+    decode.optional(decode.string),
+  )
+  use expires_at <- decode.field("expiresAt", decode.string)
+  decode.success(InvitationPayload(
     id: id,
     inviter_auth_id: inviter_auth_id,
     inviter_display_name: inviter_display_name,
@@ -165,26 +152,19 @@ fn decode_invitation_payload(
   ))
 }
 
-fn decode_acceptance_payload(
-  dyn: dynamic.Dynamic,
-) -> Result(AcceptancePayload, dynamic.DecodeErrors) {
-  use invitation_id <- result.try(dynamic.field(
-    "invitationId",
-    dynamic.string,
-  )(dyn))
-  use room_id <- result.try(dynamic.field("roomId", dynamic.string)(dyn))
-  Ok(AcceptancePayload(invitation_id: invitation_id, room_id: room_id))
+fn acceptance_payload_decoder() -> decode.Decoder(AcceptancePayload) {
+  use invitation_id <- decode.field("invitationId", decode.string)
+  use room_id <- decode.field("roomId", decode.string)
+  decode.success(AcceptancePayload(
+    invitation_id: invitation_id,
+    room_id: room_id,
+  ))
 }
 
-fn decode_activity_snapshot(
-  dyn: dynamic.Dynamic,
-) -> Result(ActivitySnapshot, dynamic.DecodeErrors) {
-  use count <- result.try(dynamic.field(
-    "recentSpeakerEventCount",
-    dynamic.int,
-  )(dyn))
-  use emitted_at <- result.try(dynamic.field("emittedAt", dynamic.string)(dyn))
-  Ok(ActivitySnapshot(
+fn activity_snapshot_decoder() -> decode.Decoder(ActivitySnapshot) {
+  use count <- decode.field("recentSpeakerEventCount", decode.int)
+  use emitted_at <- decode.field("emittedAt", decode.string)
+  decode.success(ActivitySnapshot(
     recent_speaker_event_count: count,
     emitted_at: emitted_at,
   ))
@@ -194,16 +174,19 @@ fn decode_activity_snapshot(
 /// パース失敗時は UnknownMessage を返す（接続は切らない）。
 pub fn parse_client_message(text: String) -> ClientMessage {
   let type_result =
-    json.decode(text, dynamic.field("type", dynamic.string))
+    json.parse(from: text, using: {
+      use t <- decode.field("type", decode.string)
+      decode.success(t)
+    })
     |> result.unwrap("")
 
   case type_result {
     "presence:join" -> {
       case
-        json.decode(
-          text,
-          dynamic.field("payload", decode_presence_payload),
-        )
+        json.parse(from: text, using: {
+          use payload <- decode.field("payload", presence_payload_decoder())
+          decode.success(payload)
+        })
       {
         Ok(payload) -> PresenceJoin(payload: payload)
         Error(_) -> UnknownMessage
@@ -212,14 +195,11 @@ pub fn parse_client_message(text: String) -> ClientMessage {
 
     "presence:update_position" -> {
       case
-        json.decode(
-          text,
-          dynamic.decode2(
-            fn(x, y) { #(x, y) },
-            dynamic.field("x", dynamic.float),
-            dynamic.field("y", dynamic.float),
-          ),
-        )
+        json.parse(from: text, using: {
+          use x <- decode.field("x", decode.float)
+          use y <- decode.field("y", decode.float)
+          decode.success(#(x, y))
+        })
       {
         Ok(#(x, y)) -> PresenceUpdatePosition(x: x, y: y)
         Error(_) -> UnknownMessage
@@ -227,7 +207,12 @@ pub fn parse_client_message(text: String) -> ClientMessage {
     }
 
     "presence:update_status" -> {
-      case json.decode(text, dynamic.field("status", dynamic.string)) {
+      case
+        json.parse(from: text, using: {
+          use s <- decode.field("status", decode.string)
+          decode.success(s)
+        })
+      {
         Ok(s) -> PresenceUpdateStatus(status: parse_status(s))
         Error(_) -> UnknownMessage
       }
@@ -235,10 +220,14 @@ pub fn parse_client_message(text: String) -> ClientMessage {
 
     "presence:update_room" -> {
       case
-        json.decode(
-          text,
-          dynamic.optional_field("room_id", dynamic.string),
-        )
+        json.parse(from: text, using: {
+          use room_id <- decode.optional_field(
+            "room_id",
+            None,
+            decode.optional(decode.string),
+          )
+          decode.success(room_id)
+        })
       {
         Ok(room_id) -> PresenceUpdateRoom(room_id: room_id)
         Error(_) -> UnknownMessage
@@ -249,14 +238,11 @@ pub fn parse_client_message(text: String) -> ClientMessage {
 
     "invitation:send" -> {
       case
-        json.decode(
-          text,
-          dynamic.decode2(
-            fn(id, p) { #(id, p) },
-            dynamic.field("invitee_auth_id", dynamic.string),
-            dynamic.field("payload", decode_invitation_payload),
-          ),
-        )
+        json.parse(from: text, using: {
+          use id <- decode.field("invitee_auth_id", decode.string)
+          use p <- decode.field("payload", invitation_payload_decoder())
+          decode.success(#(id, p))
+        })
       {
         Ok(#(id, p)) -> InvitationSend(invitee_auth_id: id, payload: p)
         Error(_) -> UnknownMessage
@@ -265,14 +251,11 @@ pub fn parse_client_message(text: String) -> ClientMessage {
 
     "invitation:accept" -> {
       case
-        json.decode(
-          text,
-          dynamic.decode2(
-            fn(id, p) { #(id, p) },
-            dynamic.field("inviter_auth_id", dynamic.string),
-            dynamic.field("payload", decode_acceptance_payload),
-          ),
-        )
+        json.parse(from: text, using: {
+          use id <- decode.field("inviter_auth_id", decode.string)
+          use p <- decode.field("payload", acceptance_payload_decoder())
+          decode.success(#(id, p))
+        })
       {
         Ok(#(id, p)) -> InvitationAccept(inviter_auth_id: id, payload: p)
         Error(_) -> UnknownMessage
@@ -280,28 +263,48 @@ pub fn parse_client_message(text: String) -> ClientMessage {
     }
 
     "invitation:subscribe" -> {
-      case json.decode(text, dynamic.field("invitee_auth_id", dynamic.string)) {
+      case
+        json.parse(from: text, using: {
+          use id <- decode.field("invitee_auth_id", decode.string)
+          decode.success(id)
+        })
+      {
         Ok(id) -> InvitationSubscribe(invitee_auth_id: id)
         Error(_) -> UnknownMessage
       }
     }
 
     "acceptance:subscribe" -> {
-      case json.decode(text, dynamic.field("inviter_auth_id", dynamic.string)) {
+      case
+        json.parse(from: text, using: {
+          use id <- decode.field("inviter_auth_id", decode.string)
+          decode.success(id)
+        })
+      {
         Ok(id) -> AcceptanceSubscribe(inviter_auth_id: id)
         Error(_) -> UnknownMessage
       }
     }
 
     "room:subscribe" -> {
-      case json.decode(text, dynamic.field("room_id", dynamic.string)) {
+      case
+        json.parse(from: text, using: {
+          use id <- decode.field("room_id", decode.string)
+          decode.success(id)
+        })
+      {
         Ok(id) -> RoomSubscribe(room_id: id)
         Error(_) -> UnknownMessage
       }
     }
 
     "room:unsubscribe" -> {
-      case json.decode(text, dynamic.field("room_id", dynamic.string)) {
+      case
+        json.parse(from: text, using: {
+          use id <- decode.field("room_id", decode.string)
+          decode.success(id)
+        })
+      {
         Ok(id) -> RoomUnsubscribe(room_id: id)
         Error(_) -> UnknownMessage
       }
@@ -309,14 +312,11 @@ pub fn parse_client_message(text: String) -> ClientMessage {
 
     "room:activity" -> {
       case
-        json.decode(
-          text,
-          dynamic.decode2(
-            fn(id, s) { #(id, s) },
-            dynamic.field("room_id", dynamic.string),
-            dynamic.field("snapshot", decode_activity_snapshot),
-          ),
-        )
+        json.parse(from: text, using: {
+          use id <- decode.field("room_id", decode.string)
+          use s <- decode.field("snapshot", activity_snapshot_decoder())
+          decode.success(#(id, s))
+        })
       {
         Ok(#(id, s)) -> RoomBroadcastActivity(room_id: id, snapshot: s)
         Error(_) -> UnknownMessage
