@@ -4,9 +4,10 @@
 /// 特定ユーザーに招待・承諾を届けるために使う。
 /// 1ユーザーが複数タブを開いている場合、最後に登録した接続にのみ届く。
 
-import gleam/dict.{type Dict}
+import gleam/dict
 import gleam/erlang/process.{type Subject}
 import gleam/otp/actor
+import gleam/result
 
 pub opaque type Message {
   Subscribe(auth_user_id: String, conn_id: String)
@@ -14,14 +15,14 @@ pub opaque type Message {
   GetConnId(auth_user_id: String, reply_with: Subject(Result(String, Nil)))
 }
 
-type State =
-  Dict(String, String)
-
 pub fn start() -> Result(Subject(Message), actor.StartError) {
-  actor.start(dict.new(), handle_message)
+  actor.new(dict.new())
+  |> actor.on_message(handle_message)
+  |> actor.start
+  |> result.map(fn(s) { s.data })
 }
 
-fn handle_message(msg: Message, state: State) -> actor.Next(Message, State) {
+fn handle_message(state, msg: Message) {
   case msg {
     Subscribe(auth_user_id, conn_id) ->
       actor.continue(dict.insert(state, auth_user_id, conn_id))
@@ -74,7 +75,7 @@ pub fn get_conn_id(
 ) -> Result(String, Nil) {
   actor.call(
     router,
-    fn(reply) { GetConnId(auth_user_id: auth_user_id, reply_with: reply) },
-    1000,
+    waiting: 1000,
+    sending: fn(reply) { GetConnId(auth_user_id: auth_user_id, reply_with: reply) },
   )
 }

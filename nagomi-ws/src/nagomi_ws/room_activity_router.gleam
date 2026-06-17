@@ -4,11 +4,11 @@
 /// フロア閲覧中のクライアントが room:subscribe で登録し、
 /// 通話中クライアントが room:activity を送信するとサブスクライバーに転送する。
 
-import gleam/dict.{type Dict}
+import gleam/dict
 import gleam/erlang/process.{type Subject}
-import gleam/list
 import gleam/otp/actor
-import gleam/set.{type Set}
+import gleam/result
+import gleam/set
 
 pub opaque type Message {
   Subscribe(room_id: String, conn_id: String)
@@ -17,27 +17,26 @@ pub opaque type Message {
   GetSubscribers(room_id: String, reply_with: Subject(List(String)))
 }
 
-type State =
-  Dict(String, Set(String))
-
 pub fn start() -> Result(Subject(Message), actor.StartError) {
-  actor.start(dict.new(), handle_message)
+  actor.new(dict.new())
+  |> actor.on_message(handle_message)
+  |> actor.start
+  |> result.map(fn(s) { s.data })
 }
 
-fn handle_message(msg: Message, state: State) -> actor.Next(Message, State) {
+fn handle_message(state, msg: Message) {
   case msg {
     Subscribe(room_id, conn_id) -> {
       let subscribers =
         dict.get(state, room_id)
-        |> result_or(set.new())
+        |> result.unwrap(set.new())
         |> set.insert(conn_id)
       actor.continue(dict.insert(state, room_id, subscribers))
     }
 
     Unsubscribe(room_id, conn_id) -> {
       let new_state = case dict.get(state, room_id) {
-        Ok(subs) ->
-          dict.insert(state, room_id, set.delete(subs, conn_id))
+        Ok(subs) -> dict.insert(state, room_id, set.delete(subs, conn_id))
         Error(_) -> state
       }
       actor.continue(new_state)
@@ -52,18 +51,11 @@ fn handle_message(msg: Message, state: State) -> actor.Next(Message, State) {
     GetSubscribers(room_id, reply_with) -> {
       let conn_ids =
         dict.get(state, room_id)
-        |> result_or(set.new())
+        |> result.unwrap(set.new())
         |> set.to_list
       process.send(reply_with, conn_ids)
       actor.continue(state)
     }
-  }
-}
-
-fn result_or(result: Result(a, e), default: a) -> a {
-  case result {
-    Ok(v) -> v
-    Error(_) -> default
   }
 }
 
@@ -97,7 +89,7 @@ pub fn get_subscribers(
 ) -> List(String) {
   actor.call(
     router,
-    fn(reply) { GetSubscribers(room_id: room_id, reply_with: reply) },
-    1000,
+    waiting: 1000,
+    sending: fn(reply) { GetSubscribers(room_id: room_id, reply_with: reply) },
   )
 }

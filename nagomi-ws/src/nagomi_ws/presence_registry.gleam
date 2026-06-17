@@ -4,10 +4,10 @@
 /// 接続 ID ↔ PresencePayload のマッピングを保持し、
 /// 誰かが接続・更新・切断するたびに ws_handler が get_all() してブロードキャストする。
 
-import gleam/dict.{type Dict}
+import gleam/dict
 import gleam/erlang/process.{type Subject}
-import gleam/list
 import gleam/otp/actor
+import gleam/result
 import nagomi_ws/message.{type PresencePayload}
 
 pub opaque type Message {
@@ -18,14 +18,14 @@ pub opaque type Message {
   GetByConn(conn_id: String, reply_with: Subject(Result(PresencePayload, Nil)))
 }
 
-type State =
-  Dict(String, PresencePayload)
-
 pub fn start() -> Result(Subject(Message), actor.StartError) {
-  actor.start(dict.new(), handle_message)
+  actor.new(dict.new())
+  |> actor.on_message(handle_message)
+  |> actor.start
+  |> result.map(fn(s) { s.data })
 }
 
-fn handle_message(msg: Message, state: State) -> actor.Next(Message, State) {
+fn handle_message(state, msg: Message) {
   case msg {
     Track(conn_id, _employee_id, payload) ->
       actor.continue(dict.insert(state, conn_id, payload))
@@ -76,12 +76,16 @@ pub fn untrack(registry: Subject(Message), conn_id: String) -> Nil {
 }
 
 pub fn get_all(registry: Subject(Message)) -> List(PresencePayload) {
-  actor.call(registry, GetAll, 1000)
+  actor.call(registry, waiting: 1000, sending: GetAll)
 }
 
 pub fn get_by_conn(
   registry: Subject(Message),
   conn_id: String,
 ) -> Result(PresencePayload, Nil) {
-  actor.call(registry, fn(reply) { GetByConn(conn_id: conn_id, reply_with: reply) }, 1000)
+  actor.call(
+    registry,
+    waiting: 1000,
+    sending: fn(reply) { GetByConn(conn_id: conn_id, reply_with: reply) },
+  )
 }
