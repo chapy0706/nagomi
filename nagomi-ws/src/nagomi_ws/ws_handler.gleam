@@ -158,7 +158,7 @@ pub fn handler(
       actor.continue(state)
     }
     // クライアント切断またはサーバーシャットダウン: on_close でクリーンアップ済み
-    mist.Closed | mist.Shutdown -> actor.stop(process.Normal)
+    mist.Closed | mist.Shutdown -> actor.stop()
   }
 }
 

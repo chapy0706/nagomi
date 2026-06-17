@@ -10,10 +10,11 @@
 ///   - アクターはメッセージを直列化するため、状態の競合を防げる
 ///   - ETS（共有メモリ）を使わず、プロセス境界でデータを守る
 
-import gleam/dict.{type Dict}
+import gleam/dict
 import gleam/erlang/process.{type Subject}
 import gleam/list
 import gleam/otp/actor
+import gleam/result
 
 pub opaque type Message {
   Register(id: String, subject: Subject(String))
@@ -24,31 +25,32 @@ pub opaque type Message {
   GetCount(reply_with: Subject(Int))
 }
 
-type State =
-  Dict(String, Subject(String))
-
 pub fn start() -> Result(Subject(Message), actor.StartError) {
-  actor.start(dict.new(), handle_message)
+  actor.new(dict.new())
+  |> actor.on_message(handle_message)
+  |> actor.start
+  |> result.map(fn(s) { s.data })
 }
 
-fn handle_message(msg: Message, state: State) -> actor.Next(Message, State) {
+fn handle_message(state, msg: Message) {
   case msg {
     Register(id, subject) -> actor.continue(dict.insert(state, id, subject))
 
     Unregister(id) -> actor.continue(dict.delete(state, id))
 
     Broadcast(message) -> {
-      dict.each(state, fn(_, subject) { process.send(subject, message) })
+      list.each(dict.values(state), fn(subject) {
+        process.send(subject, message)
+      })
       actor.continue(state)
     }
 
+    // exclude_id を除いた残りの全接続へ送信
     BroadcastExcept(exclude_id, message) -> {
-      dict.each(state, fn(id, subject) {
-        case id == exclude_id {
-          True -> Nil
-          False -> process.send(subject, message)
-        }
-      })
+      state
+      |> dict.delete(exclude_id)
+      |> dict.values
+      |> list.each(fn(subject) { process.send(subject, message) })
       actor.continue(state)
     }
 
@@ -71,7 +73,11 @@ fn handle_message(msg: Message, state: State) -> actor.Next(Message, State) {
 // 公開 API（ws_handler から呼ぶ）
 // ---------------------------------------------------------------------------
 
-pub fn register(registry: Subject(Message), id: String, subject: Subject(String)) -> Nil {
+pub fn register(
+  registry: Subject(Message),
+  id: String,
+  subject: Subject(String),
+) -> Nil {
   process.send(registry, Register(id: id, subject: subject))
 }
 
@@ -88,7 +94,10 @@ pub fn broadcast_except(
   exclude_id: String,
   message: String,
 ) -> Nil {
-  process.send(registry, BroadcastExcept(exclude_id: exclude_id, message: message))
+  process.send(
+    registry,
+    BroadcastExcept(exclude_id: exclude_id, message: message),
+  )
 }
 
 pub fn send_to(registry: Subject(Message), id: String, message: String) -> Nil {
@@ -96,5 +105,5 @@ pub fn send_to(registry: Subject(Message), id: String, message: String) -> Nil {
 }
 
 pub fn get_count(registry: Subject(Message)) -> Int {
-  actor.call(registry, GetCount, 1000)
+  actor.call(registry, waiting: 1000, sending: GetCount)
 }
