@@ -1,0 +1,32 @@
+# nagomi-ws 本番用 Docker Compose
+# パス: nagomi-ws/docker-compose.prod.yml
+#
+# Coolify の設定
+#   Resource Type: Docker Compose
+#   Compose File: nagomi-ws/docker-compose.prod.yml
+#
+# 環境変数（Coolify の Environment Variables に設定する）
+#   WS_PORT=3001
+#   WS_AUTH_DISABLED=true（確認用・本番では削除）
+#   JWT_SECRET=<本番の JWT secret>
+
+services:
+  nagomi-ws:
+    image: mkk5onkl3m1dhs3r96jwbi0j:7922d3ade72eb698a1e45f2a068283dc5721b774
+    container_name: nagomi-ws
+    restart: unless-stopped
+    environment:
+      - WS_PORT=3001
+      - WS_AUTH_DISABLED=${WS_AUTH_DISABLED:-false}
+      - JWT_SECRET=${JWT_SECRET}
+    networks:
+      - coolify
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.nagomi-ws.rule=Host(`ws.nagomi.chapy0706.com`)
+      - traefik.http.routers.nagomi-ws.entrypoints=http
+      - traefik.http.services.nagomi-ws.loadbalancer.server.port=3001
+
+networks:
+  coolify:
+    external: true
