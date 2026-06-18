@@ -3,20 +3,26 @@
 #
 # Coolify の設定
 #   Resource Type: Docker Compose
-#   Compose File: nagomi-ws/docker-compose.prod.yml
+#   Base Directory: /nagomi-ws
+#   Compose File: docker-compose.prod.yml
 #
 # 環境変数（Coolify の Environment Variables に設定する）
-#   WS_PORT=3001
 #   WS_AUTH_DISABLED=true（確認用・本番では削除）
 #   JWT_SECRET=<本番の JWT secret>
+#
+# ポイント
+#   image を pull するのではなく build する。
+#   これにより Coolify が Dockerfile.prod からビルドし、
+#   イメージ名の不一致が起きない。
 
 services:
   nagomi-ws:
-    image: mkk5onkl3m1dhs3r96jwbi0j:7922d3ade72eb698a1e45f2a068283dc5721b774
+    build:
+      context: .
+      dockerfile: Dockerfile.prod
     container_name: nagomi-ws
     restart: unless-stopped
     environment:
-      - WS_PORT=3001
       - WS_AUTH_DISABLED=${WS_AUTH_DISABLED:-false}
       - JWT_SECRET=${JWT_SECRET}
     networks:
