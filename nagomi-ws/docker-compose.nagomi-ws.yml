@@ -29,6 +29,7 @@ services:
       - coolify
     labels:
       - traefik.enable=true
+      - traefik.docker.network=coolify
       - traefik.http.routers.nagomi-ws.rule=Host(`ws.nagomi.chapy0706.com`)
       - traefik.http.routers.nagomi-ws.entrypoints=http
       - traefik.http.services.nagomi-ws.loadbalancer.server.port=3001
