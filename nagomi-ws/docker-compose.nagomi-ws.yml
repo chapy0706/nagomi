@@ -18,7 +18,7 @@
 services:
   nagomi-ws:
     build:
-      context: .
+      context: ./nagomi-ws
       dockerfile: Dockerfile.prod
     container_name: nagomi-ws
     restart: unless-stopped
