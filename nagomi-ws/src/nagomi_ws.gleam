@@ -38,6 +38,7 @@ pub fn main() {
 
   let assert Ok(_) =
     mist.new(router.handle_request(state, _))
+    |> mist.bind("0.0.0.0")
     |> mist.port(port)
     |> mist.start
 
