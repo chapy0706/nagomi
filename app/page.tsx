@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import { FloorCanvas } from "@/app/_components/FloorCanvas";
-import { getSessionContext } from "@/src/infrastructure/supabase/session";
+import { getSessionContext } from "@/src/infrastructure/session";
 
 export default async function Home() {
   const { authUserId, employee } = await getSessionContext();

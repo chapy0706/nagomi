@@ -2,8 +2,7 @@
 
 import { redirect } from "next/navigation";
 import { AcceptConsent } from "@/src/application/use-cases/AcceptConsent";
-import { createSupabaseAdminClient } from "@/src/infrastructure/supabase/adminClient";
-import { SupabaseEmployeeRepository } from "@/src/infrastructure/supabase/SupabaseEmployeeRepository";
+import { createEmployeeRepository } from "@/src/infrastructure/repositoryFactory";
 import { createSupabaseServerClient } from "@/src/infrastructure/supabase/serverClient";
 
 export type ConsentState = {
@@ -18,11 +17,7 @@ export async function consentAction(
   const { data } = await serverClient.auth.getUser();
   if (!data.user) redirect("/login");
 
-  const adminClient = createSupabaseAdminClient();
-  const employeeRepository = new SupabaseEmployeeRepository(adminClient);
-  const useCase = new AcceptConsent(employeeRepository);
-
-  const result = await useCase.execute({
+  const result = await new AcceptConsent(createEmployeeRepository()).execute({
     authUserId: data.user.id,
     agreed: formData.get("agreed") === "true",
   });

@@ -2,9 +2,8 @@
 
 import { redirect } from "next/navigation";
 import { RecordLogout } from "@/src/application/use-cases/RecordLogout";
+import { createAttendanceRepository } from "@/src/infrastructure/repositoryFactory";
 import { SystemClock } from "@/src/infrastructure/SystemClock";
-import { createSupabaseAdminClient } from "@/src/infrastructure/supabase/adminClient";
-import { SupabaseAttendanceRepository } from "@/src/infrastructure/supabase/SupabaseAttendanceRepository";
 import { createSupabaseServerClient } from "@/src/infrastructure/supabase/serverClient";
 
 export async function logoutAction(): Promise<void> {
@@ -14,10 +13,7 @@ export async function logoutAction(): Promise<void> {
   } = await client.auth.getUser();
 
   if (user) {
-    const adminClient = createSupabaseAdminClient();
-    const repo = new SupabaseAttendanceRepository(adminClient);
-    const useCase = new RecordLogout(repo, SystemClock);
-    await useCase.execute(user.id, "explicit");
+    await new RecordLogout(createAttendanceRepository(), SystemClock).execute(user.id, "explicit");
   }
 
   await client.auth.signOut();

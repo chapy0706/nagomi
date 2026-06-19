@@ -7,17 +7,16 @@ type EmployeeRow = { auth_user_id: string; display_name: string; avatar_url: str
 export class SupabaseBlockRepository implements BlockRepository {
   constructor(private readonly client: SupabaseClient) {}
 
-  /**
-   * blockerAuthId が blockedAuthId をブロックしているか確認する。
-   * クライアント側からの呼び出し（招待フロー）では blockedAuthId = auth.uid() が前提。
-   * RPC is_blocked_by は SECURITY DEFINER で動作し auth.uid() を利用する。
-   */
-  async isBlocked(blockerAuthId: string, _blockedAuthId: string): Promise<boolean> {
-    const { data, error } = await this.client.rpc("is_blocked_by", {
-      p_potential_blocker: blockerAuthId,
-    });
+  async isBlocked(blockerAuthId: string, blockedAuthId: string): Promise<boolean> {
+    const { data, error } = await this.client
+      .from("block_relations")
+      .select("id")
+      .eq("blocker_auth_id", blockerAuthId)
+      .eq("blocked_auth_id", blockedAuthId)
+      .limit(1)
+      .maybeSingle();
     if (error) throw new Error(`ブロック確認エラー: ${error.message}`);
-    return data as boolean;
+    return data !== null;
   }
 
   async block(blockerAuthId: string, blockedAuthId: string): Promise<void> {

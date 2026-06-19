@@ -1,7 +1,6 @@
 import { redirect } from "next/navigation";
-import { createSupabaseAdminClient } from "@/src/infrastructure/supabase/adminClient";
-import { SupabaseAttendanceRepository } from "@/src/infrastructure/supabase/SupabaseAttendanceRepository";
-import { getSessionContext } from "@/src/infrastructure/supabase/session";
+import { createAttendanceRepository } from "@/src/infrastructure/repositoryFactory";
+import { getSessionContext } from "@/src/infrastructure/session";
 
 export const metadata = { title: "在席履歴 | nagomi" };
 
@@ -33,15 +32,14 @@ export default async function AttendancePage() {
   const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
   const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 3_600_000);
 
-  const adminClient = createSupabaseAdminClient();
-  const repo = new SupabaseAttendanceRepository(adminClient);
-  const logs = await repo.findByEmployeeAuthId(authUserId, { since: thirtyDaysAgo });
+  const logs = await createAttendanceRepository().findByEmployeeAuthId(authUserId, {
+    since: thirtyDaysAgo,
+  });
 
   const monthTotal = logs
     .filter((l) => l.loggedInAt >= monthStart)
     .reduce((sum, l) => sum + l.durationMs(now), 0);
 
-  // 日付ごとにグループ化（loggedInAt の日付をキーにする）
   const byDate = new Map<string, typeof logs>();
   for (const log of logs) {
     const key = isoDate(log.loggedInAt);

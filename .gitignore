@@ -29,3 +29,4 @@ out/evidence/
 # Supabase ローカル生成ファイル
 supabase/.branches
 supabase/.temp
+.pnpm-store/

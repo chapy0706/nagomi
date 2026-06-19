@@ -2,9 +2,8 @@
 
 import { redirect } from "next/navigation";
 import { SubmitSatisfactionResponse } from "@/src/application/use-cases/SubmitSatisfactionResponse";
+import { createSatisfactionResponseGateway } from "@/src/infrastructure/repositoryFactory";
 import { SystemClock } from "@/src/infrastructure/SystemClock";
-import { createSupabaseAdminClient } from "@/src/infrastructure/supabase/adminClient";
-import { SupabaseSatisfactionResponseGateway } from "@/src/infrastructure/supabase/SupabaseSatisfactionResponseGateway";
 import { createSupabaseServerClient } from "@/src/infrastructure/supabase/serverClient";
 
 export type SatisfactionActionState = {
@@ -16,11 +15,6 @@ const INITIAL_STATE: SatisfactionActionState = { success: undefined, errorMessag
 
 export { INITIAL_STATE as SATISFACTION_INITIAL_STATE };
 
-/**
- * 満足度アンケートを送信する Server Action。
- * admin クライアント（service_role）で INSERT することで、
- * DB 書き込み時に回答者の認証情報が記録されない。
- */
 export async function submitSatisfactionAction(
   _prev: SatisfactionActionState,
   formData: FormData
@@ -32,9 +26,7 @@ export async function submitSatisfactionAction(
   const type = formData.get("type");
   const comment = formData.get("comment");
 
-  const adminClient = createSupabaseAdminClient();
-  const gateway = new SupabaseSatisfactionResponseGateway(adminClient);
-  const useCase = new SubmitSatisfactionResponse(gateway, SystemClock);
+  const useCase = new SubmitSatisfactionResponse(createSatisfactionResponseGateway(), SystemClock);
 
   if (type === "session") {
     const rawRating = formData.get("rating");

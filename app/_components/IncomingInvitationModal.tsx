@@ -10,19 +10,18 @@ import {
 import { useReportStore } from "@/app/_stores/reportStore";
 import { useVideoStore } from "@/app/_stores/videoStore";
 import { blockEmployeeAction } from "@/app/actions/block";
-import { AcceptCallInvitation } from "@/src/application/use-cases/AcceptCallInvitation";
-import { DeclineCallInvitation } from "@/src/application/use-cases/DeclineCallInvitation";
+import {
+  acceptCallInvitationAction,
+  declineCallInvitationAction,
+} from "@/app/actions/callInvitation";
 import { createInvitationGateway } from "@/src/infrastructure/realtimeGatewayFactory";
-import { SystemClock } from "@/src/infrastructure/SystemClock";
 import { createSupabaseBrowserClient } from "@/src/infrastructure/supabase/browserClient";
-import { SupabaseCallInvitationRepository } from "@/src/infrastructure/supabase/SupabaseCallInvitationRepository";
 
 type Phase = "idle" | "processing";
 
 export function IncomingInvitationModal() {
   const current = useIncomingInvitationStore((s) => s.current);
   if (!current) return null;
-  // current.id を key にして、招待が切り替わったらタイマー等の state をリセットする
   return <IncomingInvitationModalInner key={current.id} invitation={current} />;
 }
 
@@ -36,21 +35,8 @@ function IncomingInvitationModalInner({ invitation }: { invitation: IncomingInvi
   );
 
   const supabase = useMemo(() => createSupabaseBrowserClient(), []);
-  const acceptUseCase = useMemo(
-    () =>
-      new AcceptCallInvitation(
-        new SupabaseCallInvitationRepository(supabase),
-        createInvitationGateway(supabase),
-        SystemClock
-      ),
-    [supabase]
-  );
-  const declineUseCase = useMemo(
-    () => new DeclineCallInvitation(new SupabaseCallInvitationRepository(supabase)),
-    [supabase]
-  );
+  const invitationGateway = useMemo(() => createInvitationGateway(supabase), [supabase]);
 
-  // 招待到着時にバイブレーション（対応デバイスのみ）
   useEffect(() => {
     navigator.vibrate?.([200, 100, 200]);
   }, []);
@@ -63,7 +49,6 @@ function IncomingInvitationModalInner({ invitation }: { invitation: IncomingInvi
       );
       setSecondsLeft(remaining);
       if (remaining <= 0) {
-        // 失効: モーダルを閉じる。サーバ側 status は変更しない（クライアント側タイマーで管理）
         dismissCurrent();
       }
     };
@@ -76,12 +61,16 @@ function IncomingInvitationModalInner({ invitation }: { invitation: IncomingInvi
     if (phase !== "idle") return;
     setPhase("processing");
     try {
-      const result = await acceptUseCase.execute({
+      const result = await acceptCallInvitationAction({
         invitationId: invitation.id,
         inviterAuthId: invitation.inviterAuthId,
         expiresAt: invitation.expiresAt,
       });
       if (result.success) {
+        await invitationGateway.broadcastAcceptance(invitation.inviterAuthId, {
+          invitationId: invitation.id,
+          roomId: result.roomId,
+        });
         openRoom(result.roomId);
       }
     } catch (err) {
@@ -95,7 +84,7 @@ function IncomingInvitationModalInner({ invitation }: { invitation: IncomingInvi
     if (phase !== "idle") return;
     setPhase("processing");
     try {
-      await declineUseCase.execute({ invitationId: invitation.id });
+      await declineCallInvitationAction({ invitationId: invitation.id });
     } catch (err) {
       console.error("[IncomingInvitationModal] decline failed:", err);
     } finally {
@@ -108,7 +97,7 @@ function IncomingInvitationModalInner({ invitation }: { invitation: IncomingInvi
     setPhase("processing");
     try {
       await blockEmployeeAction(invitation.inviterAuthId);
-      await declineUseCase.execute({ invitationId: invitation.id });
+      await declineCallInvitationAction({ invitationId: invitation.id });
     } catch (err) {
       console.error("[IncomingInvitationModal] block failed:", err);
     } finally {

@@ -1,6 +1,5 @@
 import { redirect } from "next/navigation";
-import { createSupabaseAdminClient } from "@/src/infrastructure/supabase/adminClient";
-import { SupabaseEmployeeRepository } from "@/src/infrastructure/supabase/SupabaseEmployeeRepository";
+import { createEmployeeRepository } from "@/src/infrastructure/repositoryFactory";
 import { createSupabaseServerClient } from "@/src/infrastructure/supabase/serverClient";
 import { ChangePinForm } from "./ChangePinForm";
 
@@ -11,9 +10,7 @@ export default async function ChangePinPage() {
   const { data } = await serverClient.auth.getUser();
   if (!data.user) redirect("/login");
 
-  const adminClient = createSupabaseAdminClient();
-  const repo = new SupabaseEmployeeRepository(adminClient);
-  const employee = await repo.findByAuthUserId(data.user.id);
+  const employee = await createEmployeeRepository().findByAuthUserId(data.user.id);
 
   if (employee?.consentAcceptedAt !== undefined) redirect("/");
 

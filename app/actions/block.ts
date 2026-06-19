@@ -3,7 +3,7 @@
 import { redirect } from "next/navigation";
 import { BlockEmployee } from "@/src/application/use-cases/BlockEmployee";
 import { UnblockEmployee } from "@/src/application/use-cases/UnblockEmployee";
-import { SupabaseBlockRepository } from "@/src/infrastructure/supabase/SupabaseBlockRepository";
+import { createBlockRepository } from "@/src/infrastructure/repositoryFactory";
 import { createSupabaseServerClient } from "@/src/infrastructure/supabase/serverClient";
 
 async function getSelfAuthUserId(): Promise<string> {
@@ -14,15 +14,19 @@ async function getSelfAuthUserId(): Promise<string> {
 }
 
 export async function blockEmployeeAction(blockedAuthId: string): Promise<void> {
-  const client = await createSupabaseServerClient();
   const blockerAuthId = await getSelfAuthUserId();
-  const repo = new SupabaseBlockRepository(client);
+  const repo = createBlockRepository();
   await new BlockEmployee(repo).execute({ blockerAuthId, blockedAuthId });
 }
 
 export async function unblockEmployeeAction(blockedAuthId: string): Promise<void> {
-  const client = await createSupabaseServerClient();
   const blockerAuthId = await getSelfAuthUserId();
-  const repo = new SupabaseBlockRepository(client);
+  const repo = createBlockRepository();
   await new UnblockEmployee(repo).execute({ blockerAuthId, blockedAuthId });
+}
+
+export async function getMyBlockedAuthIdsAction(): Promise<string[]> {
+  const selfAuthUserId = await getSelfAuthUserId();
+  const repo = createBlockRepository();
+  return repo.findBlockedAuthIds(selfAuthUserId);
 }

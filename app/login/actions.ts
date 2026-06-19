@@ -3,11 +3,12 @@
 import { redirect } from "next/navigation";
 import { AuthenticateEmployee } from "@/src/application/use-cases/AuthenticateEmployee";
 import { RecordLogin } from "@/src/application/use-cases/RecordLogin";
+import {
+  createAttendanceRepository,
+  createEmployeeRepository,
+} from "@/src/infrastructure/repositoryFactory";
 import { SystemClock } from "@/src/infrastructure/SystemClock";
-import { createSupabaseAdminClient } from "@/src/infrastructure/supabase/adminClient";
-import { SupabaseAttendanceRepository } from "@/src/infrastructure/supabase/SupabaseAttendanceRepository";
 import { SupabaseAuthGateway } from "@/src/infrastructure/supabase/SupabaseAuthGateway";
-import { SupabaseEmployeeRepository } from "@/src/infrastructure/supabase/SupabaseEmployeeRepository";
 import { createSupabaseServerClient } from "@/src/infrastructure/supabase/serverClient";
 
 export type LoginState = {
@@ -23,11 +24,8 @@ export async function loginAction(_prev: LoginState, formData: FormData): Promis
   }
 
   const serverClient = await createSupabaseServerClient();
-  const adminClient = createSupabaseAdminClient();
-
   const authGateway = new SupabaseAuthGateway(serverClient);
-  const employeeRepository = new SupabaseEmployeeRepository(adminClient);
-  const useCase = new AuthenticateEmployee(authGateway, employeeRepository);
+  const useCase = new AuthenticateEmployee(authGateway, createEmployeeRepository());
 
   const result = await useCase.execute({ rawEmployeeId, pin });
 
@@ -35,9 +33,7 @@ export async function loginAction(_prev: LoginState, formData: FormData): Promis
     return { errorMessage: result.errorMessage };
   }
 
-  const attendanceRepo = new SupabaseAttendanceRepository(adminClient);
-  const recordLogin = new RecordLogin(attendanceRepo, SystemClock);
-  await recordLogin.execute(result.authUserId);
+  await new RecordLogin(createAttendanceRepository(), SystemClock).execute(result.authUserId);
 
   redirect("/");
 }

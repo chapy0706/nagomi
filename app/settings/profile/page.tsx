@@ -1,8 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { createSupabaseAdminClient } from "@/src/infrastructure/supabase/adminClient";
-import { SupabaseEmployeeRepository } from "@/src/infrastructure/supabase/SupabaseEmployeeRepository";
-import { getSessionContext } from "@/src/infrastructure/supabase/session";
+import { createEmployeeRepository } from "@/src/infrastructure/repositoryFactory";
+import { getSessionContext } from "@/src/infrastructure/session";
 import { AvatarUploadForm } from "./AvatarUploadForm";
 import { DisplayNameForm } from "./DisplayNameForm";
 
@@ -13,9 +12,7 @@ export default async function ProfilePage() {
 
   if (employee.consentAcceptedAt === undefined) redirect("/onboarding/pin");
 
-  const adminClient = createSupabaseAdminClient();
-  const repo = new SupabaseEmployeeRepository(adminClient);
-  const emp = await repo.findByAuthUserId(authUserId);
+  const emp = await createEmployeeRepository().findByAuthUserId(authUserId);
 
   return (
     <main className="mx-auto max-w-lg px-4 py-12">

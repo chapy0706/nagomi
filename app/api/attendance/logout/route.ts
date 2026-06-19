@@ -1,8 +1,7 @@
 import { NextResponse } from "next/server";
 import { RecordLogout } from "@/src/application/use-cases/RecordLogout";
+import { createAttendanceRepository } from "@/src/infrastructure/repositoryFactory";
 import { SystemClock } from "@/src/infrastructure/SystemClock";
-import { createSupabaseAdminClient } from "@/src/infrastructure/supabase/adminClient";
-import { SupabaseAttendanceRepository } from "@/src/infrastructure/supabase/SupabaseAttendanceRepository";
 import { createSupabaseServerClient } from "@/src/infrastructure/supabase/serverClient";
 
 export async function POST(): Promise<NextResponse> {
@@ -14,10 +13,7 @@ export async function POST(): Promise<NextResponse> {
     return NextResponse.json({ ok: false }, { status: 401 });
   }
 
-  const adminClient = createSupabaseAdminClient();
-  const repo = new SupabaseAttendanceRepository(adminClient);
-  const useCase = new RecordLogout(repo, SystemClock);
-  await useCase.execute(user.id, "inferred");
+  await new RecordLogout(createAttendanceRepository(), SystemClock).execute(user.id, "inferred");
 
   return NextResponse.json({ ok: true });
 }

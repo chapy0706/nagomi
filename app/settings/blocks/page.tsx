@@ -2,9 +2,8 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { AvatarImage } from "@/app/_components/AvatarImage";
 import { unblockFromListAction } from "@/app/settings/blocks/actions";
-import { createSupabaseAdminClient } from "@/src/infrastructure/supabase/adminClient";
-import { SupabaseBlockRepository } from "@/src/infrastructure/supabase/SupabaseBlockRepository";
-import { getSessionContext } from "@/src/infrastructure/supabase/session";
+import { createBlockRepository } from "@/src/infrastructure/repositoryFactory";
+import { getSessionContext } from "@/src/infrastructure/session";
 
 export const metadata = { title: "ブロックリスト | nagomi" };
 
@@ -12,9 +11,7 @@ export default async function BlocksPage() {
   const { authUserId, employee } = await getSessionContext();
   if (employee.consentAcceptedAt === undefined) redirect("/onboarding/pin");
 
-  const adminClient = createSupabaseAdminClient();
-  const repo = new SupabaseBlockRepository(adminClient);
-  const blocked = await repo.findBlockedSummaries(authUserId);
+  const blocked = await createBlockRepository().findBlockedSummaries(authUserId);
 
   return (
     <main className="mx-auto max-w-lg px-4 py-12">

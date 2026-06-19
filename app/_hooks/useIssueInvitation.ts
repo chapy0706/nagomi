@@ -1,14 +1,14 @@
 "use client";
 
 import { useMemo } from "react";
-import { IssueCallInvitation } from "@/src/application/use-cases/IssueCallInvitation";
+import {
+  type IssueCallInvitationActionResult,
+  issueCallInvitationAction,
+} from "@/app/actions/callInvitation";
 import type { InvitationTopic } from "@/src/domain/entities/CallInvitation";
 import type { PresenceStatus } from "@/src/domain/ports/PresenceGateway";
 import { createInvitationGateway } from "@/src/infrastructure/realtimeGatewayFactory";
-import { SystemClock } from "@/src/infrastructure/SystemClock";
 import { createSupabaseBrowserClient } from "@/src/infrastructure/supabase/browserClient";
-import { SupabaseBlockRepository } from "@/src/infrastructure/supabase/SupabaseBlockRepository";
-import { SupabaseCallInvitationRepository } from "@/src/infrastructure/supabase/SupabaseCallInvitationRepository";
 
 type IssueParams = {
   inviteeAuthId: string;
@@ -22,19 +22,10 @@ export function useIssueInvitation(params: {
   selfAvatarUrl: string | undefined;
 }) {
   const supabase = useMemo(() => createSupabaseBrowserClient(), []);
-  const useCase = useMemo(
-    () =>
-      new IssueCallInvitation(
-        new SupabaseCallInvitationRepository(supabase),
-        createInvitationGateway(supabase),
-        new SupabaseBlockRepository(supabase),
-        SystemClock
-      ),
-    [supabase]
-  );
+  const gateway = useMemo(() => createInvitationGateway(supabase), [supabase]);
 
-  const issue = (p: IssueParams) =>
-    useCase.execute({
+  const issue = async (p: IssueParams): Promise<IssueCallInvitationActionResult> => {
+    const result = await issueCallInvitationAction({
       inviterAuthId: params.selfAuthUserId,
       inviterDisplayName: params.selfDisplayName,
       inviterAvatarUrl: params.selfAvatarUrl,
@@ -42,6 +33,20 @@ export function useIssueInvitation(params: {
       inviteeStatus: p.inviteeStatus,
       topic: p.topic,
     });
+
+    if (result.success) {
+      await gateway.broadcastInvitation(p.inviteeAuthId, {
+        id: result.invitationId,
+        inviterAuthId: params.selfAuthUserId,
+        inviterDisplayName: params.selfDisplayName,
+        inviterAvatarUrl: params.selfAvatarUrl,
+        topic: p.topic,
+        expiresAt: result.expiresAt,
+      });
+    }
+
+    return result;
+  };
 
   return { issue };
 }

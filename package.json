@@ -11,9 +11,12 @@
     "vitest": "vitest"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.1072.0",
     "@supabase/ssr": "^0.10.3",
     "@supabase/supabase-js": "^2.49.4",
+    "drizzle-orm": "^0.45.2",
     "next": "16.2.6",
+    "postgres": "^3.4.9",
     "react": "19.2.4",
     "react-dom": "19.2.4",
     "recharts": "^3.8.1",
@@ -28,6 +31,7 @@
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "drizzle-kit": "^0.31.10",
     "playwright": "^1.60.0",
     "tailwindcss": "^4",
     "typescript": "^5",

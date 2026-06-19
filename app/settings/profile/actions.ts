@@ -3,9 +3,10 @@
 import { redirect } from "next/navigation";
 import { UpdateDisplayName } from "@/src/application/use-cases/UpdateDisplayName";
 import { UploadAvatarImage } from "@/src/application/use-cases/UploadAvatarImage";
-import { createSupabaseAdminClient } from "@/src/infrastructure/supabase/adminClient";
-import { SupabaseEmployeeRepository } from "@/src/infrastructure/supabase/SupabaseEmployeeRepository";
-import { SupabaseStorageGateway } from "@/src/infrastructure/supabase/SupabaseStorageGateway";
+import {
+  createEmployeeRepository,
+  createStorageGateway,
+} from "@/src/infrastructure/repositoryFactory";
 import { createSupabaseServerClient } from "@/src/infrastructure/supabase/serverClient";
 
 export type ProfileActionState = {
@@ -26,11 +27,7 @@ export async function updateDisplayNameAction(
 ): Promise<ProfileActionState> {
   const authUserId = await getAuthUserId();
 
-  const adminClient = createSupabaseAdminClient();
-  const employeeRepository = new SupabaseEmployeeRepository(adminClient);
-  const useCase = new UpdateDisplayName(employeeRepository);
-
-  const result = await useCase.execute({
+  const result = await new UpdateDisplayName(createEmployeeRepository()).execute({
     authUserId,
     newDisplayName: formData.get("displayName"),
   });
@@ -53,13 +50,8 @@ export async function uploadAvatarAction(
   }
 
   const mimeType = file.type;
-  const adminClient = createSupabaseAdminClient();
-  const serverClient = await createSupabaseServerClient();
-  const employeeRepository = new SupabaseEmployeeRepository(adminClient);
-  const storageGateway = new SupabaseStorageGateway(serverClient);
-  const useCase = new UploadAvatarImage(storageGateway, employeeRepository);
-
-  const result = await useCase.execute({
+  const storageGateway = await createStorageGateway();
+  const result = await new UploadAvatarImage(storageGateway, createEmployeeRepository()).execute({
     authUserId,
     file,
     mimeType,

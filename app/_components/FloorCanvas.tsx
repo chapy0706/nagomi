@@ -59,7 +59,11 @@ export function FloorCanvas({
   const meetingRoomIds = useMemo(() => floor.meetingRooms.map((r) => r.id), [floor]);
 
   useAttendanceLogout();
-  usePresence(authUserId, gateway);
+  usePresence(authUserId, gateway, {
+    employeeId: selfEmployeeId,
+    displayName: selfDisplayName,
+    avatarUrl: selfAvatarUrl,
+  });
   useIncomingInvitations(authUserId);
   useInvitationResponses(authUserId);
   const blockedAuthIds = useBlockedAuthIds(authUserId);

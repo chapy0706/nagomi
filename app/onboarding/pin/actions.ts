@@ -2,9 +2,8 @@
 
 import { redirect } from "next/navigation";
 import { ChangePIN } from "@/src/application/use-cases/ChangePIN";
-import { createSupabaseAdminClient } from "@/src/infrastructure/supabase/adminClient";
+import { createEmployeeRepository } from "@/src/infrastructure/repositoryFactory";
 import { SupabaseAuthGateway } from "@/src/infrastructure/supabase/SupabaseAuthGateway";
-import { SupabaseEmployeeRepository } from "@/src/infrastructure/supabase/SupabaseEmployeeRepository";
 import { createSupabaseServerClient } from "@/src/infrastructure/supabase/serverClient";
 
 export type ChangePinState = {
@@ -19,10 +18,8 @@ export async function changePinAction(
   const { data } = await serverClient.auth.getUser();
   if (!data.user) redirect("/login");
 
-  const adminClient = createSupabaseAdminClient();
   const authGateway = new SupabaseAuthGateway(serverClient);
-  const employeeRepository = new SupabaseEmployeeRepository(adminClient);
-  const useCase = new ChangePIN(authGateway, employeeRepository);
+  const useCase = new ChangePIN(authGateway, createEmployeeRepository());
 
   const result = await useCase.execute({
     authUserId: data.user.id,

@@ -6,14 +6,47 @@ import { useSelfPositionStore } from "@/app/_stores/selfPositionStore";
 import { EnterFloor } from "@/src/application/use-cases/EnterFloor";
 import { LeaveFloor } from "@/src/application/use-cases/LeaveFloor";
 import { buildFloor, DEFAULT_FLOOR_LAYOUT } from "@/src/domain/config/floorLayout";
+import type { EmployeeRepository } from "@/src/domain/ports/EmployeeRepository";
 import type { PresenceGateway, PresenceHandlers } from "@/src/domain/ports/PresenceGateway";
+import { EmployeeId } from "@/src/domain/value-objects/EmployeeId";
 import { Position } from "@/src/domain/value-objects/Position";
-import { createSupabaseBrowserClient } from "@/src/infrastructure/supabase/browserClient";
-import { SupabaseEmployeeRepository } from "@/src/infrastructure/supabase/SupabaseEmployeeRepository";
 
-export function usePresence(authUserId: string, gateway: PresenceGateway): void {
-  const supabase = useMemo(() => createSupabaseBrowserClient(), []);
-  const repo = useMemo(() => new SupabaseEmployeeRepository(supabase), [supabase]);
+type SelfEmployee = {
+  employeeId: string;
+  displayName: string;
+  avatarUrl: string | undefined;
+};
+
+export function usePresence(
+  authUserId: string,
+  gateway: PresenceGateway,
+  selfEmployee: SelfEmployee
+): void {
+  const repo = useMemo(
+    (): EmployeeRepository => ({
+      findByAuthUserId: async (id) => {
+        if (id !== authUserId) return undefined;
+        return {
+          id: authUserId,
+          employeeId: EmployeeId.parse(selfEmployee.employeeId),
+          displayName: selfEmployee.displayName,
+          avatarUrl: selfEmployee.avatarUrl,
+          isActive: true,
+          authUserId,
+          consentAcceptedAt: new Date(0),
+          tutorialCompletedAt: new Date(0),
+        };
+      },
+      findByEmployeeId: async () => undefined,
+      recordConsent: async () => {},
+      completeTutorial: async () => {},
+      updateDisplayName: async () => {},
+      updateAvatarUrl: async () => {},
+    }),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [authUserId, selfEmployee.employeeId, selfEmployee.displayName, selfEmployee.avatarUrl]
+  );
+
   const enterFloor = useMemo(() => new EnterFloor(repo, gateway), [repo, gateway]);
   const leaveFloor = useMemo(() => new LeaveFloor(gateway), [gateway]);
 

@@ -10,6 +10,7 @@
       "!dist",
       "!supabase",
       "!.claude",
+      "!.pnpm-store",
       "!**/*.css"
     ]
   },
