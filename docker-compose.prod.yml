@@ -1,3 +1,29 @@
+# nagomi 本体 本番用 Docker Compose
+# パス: docker-compose.prod.yml（リポジトリルート）
+#
+# Coolify の設定
+#   Build Pack: Docker Compose
+#   Base Directory: /
+#   Compose File: docker-compose.prod.yml
+#
+# 今日の教訓（nagomi-ws デプロイ）を反映
+#   - coolify ネットワークに繋ぐ（nagomi-db・Garage・Traefik が全て coolify にいる）
+#   - Traefik ルーティングは動的設定ファイルで直接書く前提（ラベルは最小限）
+#   - サブドメインは1段（nagomi.chapy0706.com）
+#   - Next.js は 0.0.0.0 で listen（Dockerfile/start で確認）
+#
+# 環境変数（Coolify の Environment Variables に設定する）
+#   DATA_PROVIDER=a1
+#   DATABASE_URL=postgres://nagomi:<pw>@<nagomi-dbコンテナ名>:5432/nagomi
+#   MINIO_ENDPOINT=http://<Garageコンテナ名>:3900
+#   MINIO_ACCESS_KEY=<Garage の Access Key ID>
+#   MINIO_SECRET_KEY=<Garage の Secret>
+#   MINIO_PUBLIC_ENDPOINT=（アバター外部公開時に設定・今は未設定で可）
+#   NEXT_PUBLIC_REALTIME_PROVIDER=websocket
+#   NEXT_PUBLIC_WS_URL=wss://nagomi-ws.chapy0706.com/ws
+#   認証関連（Supabase 認証を一旦使う場合）
+#   NEXT_PUBLIC_SUPABASE_URL / NEXT_PUBLIC_SUPABASE_ANON_KEY / SUPABASE_SERVICE_ROLE_KEY
+
 services:
   nagomi:
     build:
@@ -24,12 +50,14 @@ services:
       - MINIO_SECRET_KEY=${MINIO_SECRET_KEY}
       - MINIO_PUBLIC_ENDPOINT=${MINIO_PUBLIC_ENDPOINT}
     networks:
-      - nagomi-net
-      - traefik-net
+      - coolify
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=coolify
+      - traefik.http.routers.nagomi.rule=Host(`nagomi.chapy0706.com`)
+      - traefik.http.routers.nagomi.entrypoints=http
+      - traefik.http.services.nagomi.loadbalancer.server.port=3000
 
 networks:
-  nagomi-net:
-    driver: bridge
-  traefik-net:
+  coolify:
     external: true
-    name: traefik-net
