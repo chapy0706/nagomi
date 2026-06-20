@@ -2,12 +2,13 @@
 # リポジトリルートに .woodpecker.yml として配置する
 #
 # このパイプラインの目的
-#   push → Forgejo 同期 → Woodpecker 起動 → 実行 の流れthat通ることを確認する
+#   push → Forgejo 同期 → Woodpecker 起動 → 実行 の流れが通ることを確認する
 #   まだ DB 操作やデプロイはしない（段階2で追加する）
 
 when:
   - event: push
     branch: main
+  - event: manual
 
 steps:
   - name: hello
