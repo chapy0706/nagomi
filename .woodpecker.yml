@@ -1,9 +1,15 @@
-# nagomi 最小パイプライン（段階1: 疎通確認用）
+# nagomi パイプライン（段階2: DB 疎通 + マイグレーション）
 # リポジトリルートに .woodpecker.yml として配置する
 #
-# このパイプラインの目的
-#   push → Forgejo 同期 → Woodpecker 起動 → 実行 の流れが通ることを確認する
-#   まだ DB 操作やデプロイはしない（段階2で追加する）
+# Woodpecker 3.0+ の書式（secrets: は廃止、environment + from_secret を使う）
+#
+# Woodpecker の Secret 登録が必要
+#   Name: database_url
+#   Value: postgres://nagomi:<パスワード>@nagomi-db:5432/nagomi
+#
+# このパイプラインの流れ
+#   1. ネットワーク疎通確認（nagomi-db に到達できるか）
+#   2. 疎通できたら drizzle マイグレーションを実行する
 
 when:
   - event: push
@@ -11,12 +17,28 @@ when:
   - event: manual
 
 steps:
-  - name: hello
-    image: alpine:latest
+  # -------------------------------------------------------
+  # Step 1: ネットワーク疎通確認
+  # nagomi-db というコンテナ名で到達できるか先に確認する
+  # -------------------------------------------------------
+  - name: check-db-connection
+    image: postgres:16-alpine
+    environment:
+      DATABASE_URL:
+        from_secret: database_url
     commands:
-      - echo "Woodpecker パイプラインが起動しました"
-      - echo "ブランチ:"
-      - echo "$CI_COMMIT_BRANCH"
-      - echo "コミット:"
-      - echo "$CI_COMMIT_SHA"
-      - echo "段階1の疎通確認はここまで"
+      - echo "nagomi-db への疎通を確認します"
+      - pg_isready -d "$DATABASE_URL" && echo "疎通OK" || echo "疎通NG（ネットワーク要確認）"
+
+  # -------------------------------------------------------
+  # Step 2: Drizzle マイグレーション
+  # -------------------------------------------------------
+  - name: migrate
+    image: node:20-alpine
+    environment:
+      DATABASE_URL:
+        from_secret: database_url
+    commands:
+      - corepack enable && corepack prepare pnpm@9.0.0 --activate
+      - pnpm install --frozen-lockfile
+      - pnpm drizzle-kit migrate
