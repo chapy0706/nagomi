@@ -1,0 +1,21 @@
+# nagomi 最小パイプライン（段階1: 疎通確認用）
+# リポジトリルートに .woodpecker.yml として配置する
+#
+# このパイプラインの目的
+#   push → Forgejo 同期 → Woodpecker 起動 → 実行 の流れthat通ることを確認する
+#   まだ DB 操作やデプロイはしない（段階2で追加する）
+
+when:
+  - event: push
+    branch: main
+
+steps:
+  - name: hello
+    image: alpine:latest
+    commands:
+      - echo "Woodpecker パイプラインが起動しました"
+      - echo "ブランチ:"
+      - echo "$CI_COMMIT_BRANCH"
+      - echo "コミット:"
+      - echo "$CI_COMMIT_SHA"
+      - echo "段階1の疎通確認はここまで"
