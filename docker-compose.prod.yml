@@ -23,6 +23,12 @@
 #   NEXT_PUBLIC_WS_URL=wss://nagomi-ws.chapy0706.com/ws
 #   認証関連（Supabase 認証を一旦使う場合）
 #   NEXT_PUBLIC_SUPABASE_URL / NEXT_PUBLIC_SUPABASE_ANON_KEY / SUPABASE_SERVICE_ROLE_KEY
+#   認証関連（Keycloak / OIDC に切り替える場合・issue-33）
+#   AUTH_PROVIDER=keycloak
+#   AUTH_SECRET=（openssl rand -base64 32 で生成したセッション署名鍵）
+#   KEYCLOAK_ISSUER=https://auth.chapy0706.com/realms/nagomi
+#   KEYCLOAK_CLIENT_ID=nagomi-web
+#   KEYCLOAK_CLIENT_SECRET=（nagomi-web Client の Credentials）
 
 services:
   nagomi:
@@ -49,6 +55,12 @@ services:
       - MINIO_ACCESS_KEY=${MINIO_ACCESS_KEY}
       - MINIO_SECRET_KEY=${MINIO_SECRET_KEY}
       - MINIO_PUBLIC_ENDPOINT=${MINIO_PUBLIC_ENDPOINT}
+      # 認証（issue-33）。AUTH_PROVIDER=supabase（既定）で切り戻し可能。
+      - AUTH_PROVIDER=${AUTH_PROVIDER:-supabase}
+      - AUTH_SECRET=${AUTH_SECRET}
+      - KEYCLOAK_ISSUER=${KEYCLOAK_ISSUER}
+      - KEYCLOAK_CLIENT_ID=${KEYCLOAK_CLIENT_ID}
+      - KEYCLOAK_CLIENT_SECRET=${KEYCLOAK_CLIENT_SECRET}
     networks:
       - coolify
     labels:

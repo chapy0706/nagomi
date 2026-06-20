@@ -3,9 +3,13 @@
 /// DATA_PROVIDER=a1  → Postgres (Drizzle) + MinIO
 /// DATA_PROVIDER=supabase (デフォルト) → 既存 Supabase 実装
 ///
+/// AUTH_PROVIDER=keycloak → Keycloak (Auth.js / OIDC)
+/// AUTH_PROVIDER=supabase (デフォルト) → 既存 Supabase Auth
+///
 /// 切り替えはこのファイルだけ。Domain / Application 層は触らない。
 
 import type { AttendanceRepository } from "@/src/domain/ports/AttendanceRepository";
+import type { AuthGateway } from "@/src/domain/ports/AuthGateway";
 import type { BlockRepository } from "@/src/domain/ports/BlockRepository";
 import type { CallInvitationRepository } from "@/src/domain/ports/CallInvitationRepository";
 import type { CallParticipationRepository } from "@/src/domain/ports/CallParticipationRepository";
@@ -13,6 +17,7 @@ import type { EmployeeRepository } from "@/src/domain/ports/EmployeeRepository";
 import type { ReportGateway } from "@/src/domain/ports/ReportGateway";
 import type { SatisfactionResponseGateway } from "@/src/domain/ports/SatisfactionResponseGateway";
 import type { StorageGateway } from "@/src/domain/ports/StorageGateway";
+import { KeycloakAuthGateway } from "./keycloak/KeycloakAuthGateway";
 import { MinioStorageGateway } from "./minio/MinioStorageGateway";
 import { getDb } from "./postgres/client";
 import { PostgresAttendanceRepository } from "./postgres/PostgresAttendanceRepository";
@@ -24,6 +29,7 @@ import { PostgresReportGateway } from "./postgres/PostgresReportGateway";
 import { PostgresSatisfactionResponseGateway } from "./postgres/PostgresSatisfactionResponseGateway";
 import { createSupabaseAdminClient } from "./supabase/adminClient";
 import { SupabaseAttendanceRepository } from "./supabase/SupabaseAttendanceRepository";
+import { SupabaseAuthGateway } from "./supabase/SupabaseAuthGateway";
 import { SupabaseBlockRepository } from "./supabase/SupabaseBlockRepository";
 import { SupabaseCallInvitationRepository } from "./supabase/SupabaseCallInvitationRepository";
 import { SupabaseCallParticipationRepository } from "./supabase/SupabaseCallParticipationRepository";
@@ -35,6 +41,18 @@ import { createSupabaseServerClient } from "./supabase/serverClient";
 
 function isA1(): boolean {
   return process.env.DATA_PROVIDER === "a1";
+}
+
+function isKeycloak(): boolean {
+  return process.env.AUTH_PROVIDER === "keycloak";
+}
+
+/// 認証ゲートウェイ。AUTH_PROVIDER で Keycloak / Supabase を切り替える。
+/// Supabase 実装はリクエストスコープのサーバクライアントを必要とするため async。
+export async function createAuthGateway(): Promise<AuthGateway> {
+  if (isKeycloak()) return new KeycloakAuthGateway();
+  const client = await createSupabaseServerClient();
+  return new SupabaseAuthGateway(client);
 }
 
 export function createEmployeeRepository(): EmployeeRepository {

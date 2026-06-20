@@ -1,11 +1,36 @@
 "use client";
 
 import { useActionState } from "react";
-import { type LoginState, loginAction } from "./actions";
+import { keycloakLoginAction, type LoginState, loginAction } from "./actions";
 
 const initialState: LoginState = { errorMessage: undefined };
 
-export function LoginForm() {
+export type AuthProvider = "keycloak" | "supabase";
+
+export function LoginForm({ provider }: { provider: AuthProvider }) {
+  if (provider === "keycloak") {
+    return <KeycloakLoginButton />;
+  }
+  return <PinLoginForm />;
+}
+
+/// Keycloak（OIDC）ログイン。ボタン押下で Keycloak のログイン画面へリダイレクトする。
+function KeycloakLoginButton() {
+  return (
+    <form action={keycloakLoginAction} className="flex flex-col gap-4">
+      <p className="text-center text-sm text-gray-600">社内アカウントでログインします。</p>
+      <button
+        type="submit"
+        className="rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+      >
+        Keycloak でログイン
+      </button>
+    </form>
+  );
+}
+
+/// 擬似メール + PIN フォーム（AUTH_PROVIDER=supabase 用。ADR-004 / 切り戻し用）。
+function PinLoginForm() {
   const [state, formAction, isPending] = useActionState(loginAction, initialState);
 
   return (

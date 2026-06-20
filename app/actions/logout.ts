@@ -2,20 +2,23 @@
 
 import { redirect } from "next/navigation";
 import { RecordLogout } from "@/src/application/use-cases/RecordLogout";
-import { createAttendanceRepository } from "@/src/infrastructure/repositoryFactory";
+import {
+  createAttendanceRepository,
+  createAuthGateway,
+} from "@/src/infrastructure/repositoryFactory";
 import { SystemClock } from "@/src/infrastructure/SystemClock";
-import { createSupabaseServerClient } from "@/src/infrastructure/supabase/serverClient";
 
 export async function logoutAction(): Promise<void> {
-  const client = await createSupabaseServerClient();
-  const {
-    data: { user },
-  } = await client.auth.getUser();
+  const authGateway = await createAuthGateway();
+  const authUserId = await authGateway.getAuthUserId();
 
-  if (user) {
-    await new RecordLogout(createAttendanceRepository(), SystemClock).execute(user.id, "explicit");
+  if (authUserId) {
+    await new RecordLogout(createAttendanceRepository(), SystemClock).execute(
+      authUserId,
+      "explicit"
+    );
   }
 
-  await client.auth.signOut();
+  await authGateway.signOut();
   redirect("/login");
 }

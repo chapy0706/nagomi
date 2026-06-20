@@ -1,9 +1,9 @@
-/// 認証は引き続き Supabase Auth を使用する（issue-33 まで変更しない）。
-/// 従業員データの取得は repositoryFactory 経由で DATA_PROVIDER に従い切り替わる。
+/// 認証は AUTH_PROVIDER（keycloak / supabase）で切り替わる。
+/// 従業員データの取得は DATA_PROVIDER（a1 / supabase）で切り替わる。
+/// いずれも repositoryFactory に集約し、このファイルはプロバイダを知らない。
 
 import { redirect } from "next/navigation";
-import { createEmployeeRepository } from "./repositoryFactory";
-import { createSupabaseServerClient } from "./supabase/serverClient";
+import { createAuthGateway, createEmployeeRepository } from "./repositoryFactory";
 
 export type SessionEmployee = {
   employeeId: string;
@@ -19,20 +19,20 @@ export type SessionContext = {
 };
 
 export async function getSessionContext(): Promise<SessionContext> {
-  const serverClient = await createSupabaseServerClient();
-  const { data } = await serverClient.auth.getUser();
-  if (!data.user) redirect("/login");
+  const authGateway = await createAuthGateway();
+  const authUserId = await authGateway.getAuthUserId();
+  if (!authUserId) redirect("/login");
 
   const repo = createEmployeeRepository();
-  const employee = await repo.findByAuthUserId(data.user.id);
+  const employee = await repo.findByAuthUserId(authUserId);
 
   if (!employee?.isActive) {
-    await serverClient.auth.signOut();
+    await authGateway.signOut();
     redirect("/login");
   }
 
   return {
-    authUserId: data.user.id,
+    authUserId,
     employee: {
       employeeId: employee.employeeId.value,
       displayName: employee.displayName,

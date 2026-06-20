@@ -1,10 +1,16 @@
 ---
-status: 承認
+status: superseded
 date: 2026-05-21
 deciders: ちゃぴぃ
+superseded-by: ADR-010
 ---
 
 # ADR-004: 認証に擬似メール方式のホワイトリストを採用し、カスタム認証・Magic Link を不採用とした
+
+> **このADRは ADR-010 によって supersede された（2026-06-20）。**
+> 認証基盤を Supabase Auth（擬似メール + PIN）から Keycloak（OIDC）へ移行する。
+> 技術選定の根拠は ADR-009、ホワイトリストを業務属性として残す判断は ADR-010 を参照。
+> 本ADRは経緯保存のため削除せず残す。
 
 ## Context
 
