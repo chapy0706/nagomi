@@ -1,9 +1,49 @@
 import { createServerClient } from "@supabase/ssr";
-import { type NextRequest, NextResponse } from "next/server";
+import {
+  type NextFetchEvent,
+  type NextMiddleware,
+  type NextRequest,
+  NextResponse,
+} from "next/server";
+import NextAuth from "next-auth";
+import { authConfig } from "@/src/infrastructure/keycloak/auth.config";
 
-const PUBLIC_PATHS = ["/login"];
+// /login と OIDC エンドポイント（/api/auth/*）は未認証でも通す。
+// /api/auth/callback/keycloak を弾くとログインが成立しないため必須。
+const PUBLIC_PATHS = ["/login", "/api/auth"];
 
-export async function middleware(request: NextRequest) {
+function isPublicPath(pathname: string): boolean {
+  return PUBLIC_PATHS.some((p) => pathname === p || pathname.startsWith(`${p}/`));
+}
+
+// Edge-safe な Auth.js インスタンス（DB を含まない authConfig のみ）。
+// auth.ts（postgres を巻き込む）は middleware から import しない。
+const { auth: keycloakAuth } = NextAuth(authConfig);
+
+// Keycloak モード: Auth.js セッション（JWT cookie）の有無で通過/リダイレクトを決める。
+// req.auth に decode 済みセッション（未ログインなら null）が入る。
+// is_active / is_admin の DB 照合は Edge 不可のため getSessionContext・各ページ側に委ねる。
+// keycloakAuth(handler) の戻り型は route handler 文脈（AppRouteHandlerFnContext）を
+// 想定した型になっており、middleware の (request, NextFetchEvent) と合わない。
+// 実行時は middleware として正しく動くため、NextMiddleware へ明示キャストする。
+const keycloakHandler = keycloakAuth((req) => {
+  const { pathname } = req.nextUrl;
+  if (isPublicPath(pathname)) return NextResponse.next();
+  if (req.auth) return NextResponse.next();
+  const loginUrl = req.nextUrl.clone();
+  loginUrl.pathname = "/login";
+  return NextResponse.redirect(loginUrl);
+}) as unknown as NextMiddleware;
+
+export function middleware(request: NextRequest, event: NextFetchEvent) {
+  if (process.env.AUTH_PROVIDER === "keycloak") {
+    return keycloakHandler(request, event);
+  }
+  return supabaseMiddleware(request);
+}
+
+// Supabase モード（既定・切り戻し用）: 従来どおり Supabase Auth で検証する。
+async function supabaseMiddleware(request: NextRequest) {
   let supabaseResponse = NextResponse.next({ request });
 
   const supabase = createServerClient(
@@ -33,10 +73,9 @@ export async function middleware(request: NextRequest) {
   } = await supabase.auth.getUser();
 
   const { pathname } = request.nextUrl;
-  const isPublicPath = PUBLIC_PATHS.some((p) => pathname === p || pathname.startsWith(`${p}/`));
 
   if (!user) {
-    if (isPublicPath) return supabaseResponse;
+    if (isPublicPath(pathname)) return supabaseResponse;
     const loginUrl = request.nextUrl.clone();
     loginUrl.pathname = "/login";
     return NextResponse.redirect(loginUrl);

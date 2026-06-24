@@ -26,8 +26,12 @@ export async function getSessionContext(): Promise<SessionContext> {
   const repo = createEmployeeRepository();
   const employee = await repo.findByAuthUserId(authUserId);
 
+  // employees に未登録 / 無効化済みのときは /login へ戻す。
+  // ここは Server Component 文脈のため signOut（Cookie 変更）は呼べない。
+  // セッション破棄が要る場合は logoutAction（Server Action）経由で行う。
+  // なお Keycloak モードでは signIn コールバックが未登録ユーザーの session 発行を
+  // 防ぐため、この分岐は基本的に「在籍中に無効化された」ケースのみ到達する。
   if (!employee?.isActive) {
-    await authGateway.signOut();
     redirect("/login");
   }
 
