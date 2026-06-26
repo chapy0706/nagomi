@@ -35,13 +35,5 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         return false;
       }
     },
-
-    // 初回サインイン時、account から access_token を取り出してセッション JWT に保持する。
-    async jwt({ token, account }) {
-      if (account?.access_token) {
-        token.accessToken = account.access_token;
-      }
-      return token;
-    },
   },
 });

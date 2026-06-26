@@ -37,16 +37,18 @@ export const authConfig = {
     }),
   ],
   callbacks: {
-    // セッションに sub（Keycloak ユーザー UUID）と access_token を載せる。
+    // セッションに sub（Keycloak ユーザー UUID）を載せる。
     // ここは JWT を decode するだけで DB に触れないため Edge でも安全。
     // - sub: employees.auth_user_id との照合に使う（ADR-010）
-    // - access_token: WebSocket 接続時に nagomi-ws へ渡し RS256 検証させる（ステップ8）
+    //
+    // 注: access_token はあえて session に載せない。Keycloak の access_token は
+    // 大きく、cookie が 4KB を超えてチャンク分割（.0/.1）され、過去 cookie との
+    // 重複や復号失敗の温床になる。access_token が要るステップ8（nagomi-ws の
+    // RS256 検証）では、cookie に詰めず別経路で取得する方針に切り替える。
     session({ session, token }) {
       if (token.sub) {
         session.user.id = token.sub;
       }
-      // token.accessToken は JWT 既定型では unknown のため runtime narrow する。
-      session.accessToken = typeof token.accessToken === "string" ? token.accessToken : undefined;
       return session;
     },
   },
