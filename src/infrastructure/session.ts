@@ -18,13 +18,30 @@ export type SessionContext = {
   employee: SessionEmployee;
 };
 
+// AUTH_DEBUG=1 のときだけ server ログ（Coolify の nagomi コンテナログ）に出す。
+// どこで /login に弾かれているかを切り分けるための一時的なデバッグ。
+function debugLog(message: string): void {
+  if (process.env.AUTH_DEBUG === "1") {
+    console.log(`[auth-debug] ${message}`);
+  }
+}
+
 export async function getSessionContext(): Promise<SessionContext> {
   const authGateway = await createAuthGateway();
   const authUserId = await authGateway.getAuthUserId();
-  if (!authUserId) redirect("/login");
+  debugLog(
+    `provider=${process.env.AUTH_PROVIDER ?? "supabase"} dataProvider=${process.env.DATA_PROVIDER ?? "supabase"} authUserId=${authUserId ?? "(none)"}`
+  );
+  if (!authUserId) {
+    debugLog("redirect /login (authUserId なし＝session 復号失敗 or 未ログイン)");
+    redirect("/login");
+  }
 
   const repo = createEmployeeRepository();
   const employee = await repo.findByAuthUserId(authUserId);
+  debugLog(
+    `employee found=${Boolean(employee)} isActive=${employee?.isActive ?? "n/a"} consentAcceptedAt=${String(employee?.consentAcceptedAt)}`
+  );
 
   // employees に未登録 / 無効化済みのときは /login へ戻す。
   // ここは Server Component 文脈のため signOut（Cookie 変更）は呼べない。
@@ -32,6 +49,7 @@ export async function getSessionContext(): Promise<SessionContext> {
   // なお Keycloak モードでは signIn コールバックが未登録ユーザーの session 発行を
   // 防ぐため、この分岐は基本的に「在籍中に無効化された」ケースのみ到達する。
   if (!employee?.isActive) {
+    debugLog("redirect /login (employee 未登録 or 無効＝sub 未マッピングの可能性)");
     redirect("/login");
   }
 
