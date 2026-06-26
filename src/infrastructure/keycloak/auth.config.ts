@@ -60,8 +60,12 @@ export const authConfig = {
     // 重複や復号失敗の温床になる。access_token が要るステップ8（nagomi-ws の
     // RS256 検証）では、cookie に詰めず別経路で取得する方針に切り替える。
     session({ session, token }) {
-      if (token.sub) {
-        session.user.id = token.sub;
+      // keycloakSub（jwt コールバックで保存した安定 Keycloak sub）を最優先で使う。
+      // token.sub は Auth.js がランダム生成しログインごとに変わるため信頼しない。
+      const keycloakSub = typeof token.keycloakSub === "string" ? token.keycloakSub : undefined;
+      const sub = keycloakSub ?? token.sub;
+      if (sub) {
+        session.user.id = sub;
       }
       return session;
     },

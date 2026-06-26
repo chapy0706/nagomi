@@ -35,5 +35,19 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         return false;
       }
     },
+
+    // Keycloak の安定 sub をカスタムクレーム keycloakSub として JWT に固定する。
+    // Auth.js は token.sub にランダム値を入れてしまい（provider の profile() で id を
+    // 指定しても token.sub には反映されない）、ログインごとに値が変わる。その結果
+    // signIn が照合する profile.sub（安定・employees.auth_user_id と一致）と session
+    // に載る id が食い違い /login ループになる。カスタムクレームは Auth.js が触らない
+    // ため、ここに profile.sub を保存して session 側でこれを読む（auth.config.ts）。
+    // profile は初回サインイン時のみ存在し、以降は JWT 内の keycloakSub が保持される。
+    jwt({ token, profile }) {
+      if (profile && typeof profile.sub === "string") {
+        token.keycloakSub = profile.sub;
+      }
+      return token;
+    },
   },
 });
