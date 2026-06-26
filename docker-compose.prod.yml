@@ -26,6 +26,10 @@
 #   認証関連（Keycloak / OIDC に切り替える場合・issue-33）
 #   AUTH_PROVIDER=keycloak
 #   AUTH_SECRET=（openssl rand -base64 32 で生成したセッション署名鍵）
+#   AUTH_URL=https://nagomi.chapy0706.com
+#     ↑ リバースプロキシ手前で TLS 終端する構成で必須。Auth.js が内部 HTTP を
+#       https と認識し、__Secure- Cookie を set/read 双方で正しく扱えるようにする。
+#   AUTH_TRUST_HOST=true（X-Forwarded-Host/Proto を信頼。コード側 trustHost:true と等価）
 #   KEYCLOAK_ISSUER=https://auth.chapy0706.com/realms/nagomi
 #   KEYCLOAK_CLIENT_ID=nagomi-web
 #   KEYCLOAK_CLIENT_SECRET=（nagomi-web Client の Credentials）
@@ -58,6 +62,9 @@ services:
       # 認証（issue-33）。AUTH_PROVIDER=supabase（既定）で切り戻し可能。
       - AUTH_PROVIDER=${AUTH_PROVIDER:-supabase}
       - AUTH_SECRET=${AUTH_SECRET}
+      # TLS 終端が手前のプロキシ構成で Secure Cookie を正しく扱うために必須。
+      - AUTH_URL=${AUTH_URL}
+      - AUTH_TRUST_HOST=${AUTH_TRUST_HOST:-true}
       - KEYCLOAK_ISSUER=${KEYCLOAK_ISSUER}
       - KEYCLOAK_CLIENT_ID=${KEYCLOAK_CLIENT_ID}
       - KEYCLOAK_CLIENT_SECRET=${KEYCLOAK_CLIENT_SECRET}
