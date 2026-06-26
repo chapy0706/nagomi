@@ -34,12 +34,26 @@ export const authConfig = {
       issuer: process.env.KEYCLOAK_ISSUER,
       clientId: process.env.KEYCLOAK_CLIENT_ID,
       clientSecret: process.env.KEYCLOAK_CLIENT_SECRET,
+      // user.id を Keycloak の sub（ユーザー UUID）に固定する。
+      // これを明示しないと Auth.js が user.id をランダム生成し、token.sub が
+      // ログインごとに変わってしまう。その結果 signIn コールバックが見る
+      // profile.sub（安定・employees.auth_user_id と一致）と、session に載る
+      // token.sub（ランダム）が食い違い、getSessionContext で employee が
+      // 引けず /login ループになる。profile.sub に固定して両者を一致させる。
+      profile(profile) {
+        return {
+          id: profile.sub,
+          name: profile.preferred_username ?? profile.name,
+          email: profile.email,
+        };
+      },
     }),
   ],
   callbacks: {
     // セッションに sub（Keycloak ユーザー UUID）を載せる。
     // ここは JWT を decode するだけで DB に触れないため Edge でも安全。
-    // - sub: employees.auth_user_id との照合に使う（ADR-010）
+    // token.sub は上の profile() により profile.sub（安定した Keycloak UUID）に
+    // 一致する。employees.auth_user_id との照合に使う（ADR-010）。
     //
     // 注: access_token はあえて session に載せない。Keycloak の access_token は
     // 大きく、cookie が 4KB を超えてチャンク分割（.0/.1）され、過去 cookie との
