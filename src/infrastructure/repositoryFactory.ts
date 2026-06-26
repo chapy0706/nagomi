@@ -47,6 +47,12 @@ function isKeycloak(): boolean {
   return process.env.AUTH_PROVIDER === "keycloak";
 }
 
+/// AUTH_PROVIDER=keycloak かどうか。Node 文脈（RSC / server action）でのみ正しく読める
+/// （Edge ランタイムの middleware では参照不可）。UI 分岐（PIN ステップのスキップ等）に使う。
+export function isKeycloakAuthProvider(): boolean {
+  return isKeycloak();
+}
+
 /// 認証ゲートウェイ。AUTH_PROVIDER で Keycloak / Supabase を切り替える。
 /// Supabase 実装はリクエストスコープのサーバクライアントを必要とするため async。
 export async function createAuthGateway(): Promise<AuthGateway> {

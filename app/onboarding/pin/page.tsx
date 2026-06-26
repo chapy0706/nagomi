@@ -1,16 +1,21 @@
 import { redirect } from "next/navigation";
-import { createEmployeeRepository } from "@/src/infrastructure/repositoryFactory";
-import { createSupabaseServerClient } from "@/src/infrastructure/supabase/serverClient";
+import {
+  createAuthGateway,
+  createEmployeeRepository,
+  isKeycloakAuthProvider,
+} from "@/src/infrastructure/repositoryFactory";
 import { ChangePinForm } from "./ChangePinForm";
 
 export const metadata = { title: "PIN設定 | nagomi" };
 
 export default async function ChangePinPage() {
-  const serverClient = await createSupabaseServerClient();
-  const { data } = await serverClient.auth.getUser();
-  if (!data.user) redirect("/login");
+  // Keycloak モードでは PIN（Supabase パスワード）設定が無意味なため同意へ退避（ADR-010）。
+  if (isKeycloakAuthProvider()) redirect("/onboarding/consent");
 
-  const employee = await createEmployeeRepository().findByAuthUserId(data.user.id);
+  const authUserId = await (await createAuthGateway()).getAuthUserId();
+  if (!authUserId) redirect("/login");
+
+  const employee = await createEmployeeRepository().findByAuthUserId(authUserId);
 
   if (employee?.consentAcceptedAt !== undefined) redirect("/");
 

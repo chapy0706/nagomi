@@ -2,15 +2,16 @@
 
 import { redirect } from "next/navigation";
 import { CompleteTutorial } from "@/src/application/use-cases/CompleteTutorial";
-import { createEmployeeRepository } from "@/src/infrastructure/repositoryFactory";
-import { createSupabaseServerClient } from "@/src/infrastructure/supabase/serverClient";
+import {
+  createAuthGateway,
+  createEmployeeRepository,
+} from "@/src/infrastructure/repositoryFactory";
 
 export async function completeTutorialAction(): Promise<void> {
-  const serverClient = await createSupabaseServerClient();
-  const { data } = await serverClient.auth.getUser();
-  if (!data.user) redirect("/login");
+  const authUserId = await (await createAuthGateway()).getAuthUserId();
+  if (!authUserId) redirect("/login");
 
-  await new CompleteTutorial(createEmployeeRepository()).execute(data.user.id);
+  await new CompleteTutorial(createEmployeeRepository()).execute(authUserId);
 
   redirect("/");
 }

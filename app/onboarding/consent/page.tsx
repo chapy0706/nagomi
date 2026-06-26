@@ -1,8 +1,10 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { redirect } from "next/navigation";
-import { createEmployeeRepository } from "@/src/infrastructure/repositoryFactory";
-import { createSupabaseServerClient } from "@/src/infrastructure/supabase/serverClient";
+import {
+  createAuthGateway,
+  createEmployeeRepository,
+} from "@/src/infrastructure/repositoryFactory";
 import { ConsentForm } from "./ConsentForm";
 
 export const metadata = { title: "利用同意 | nagomi" };
@@ -25,11 +27,10 @@ function parseMarkdown(md: string): Block[] {
 }
 
 export default async function ConsentPage() {
-  const serverClient = await createSupabaseServerClient();
-  const { data } = await serverClient.auth.getUser();
-  if (!data.user) redirect("/login");
+  const authUserId = await (await createAuthGateway()).getAuthUserId();
+  if (!authUserId) redirect("/login");
 
-  const employee = await createEmployeeRepository().findByAuthUserId(data.user.id);
+  const employee = await createEmployeeRepository().findByAuthUserId(authUserId);
 
   if (employee?.consentAcceptedAt !== undefined) redirect("/");
 

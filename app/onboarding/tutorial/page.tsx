@@ -1,19 +1,23 @@
 import { redirect } from "next/navigation";
-import { createEmployeeRepository } from "@/src/infrastructure/repositoryFactory";
-import { createSupabaseServerClient } from "@/src/infrastructure/supabase/serverClient";
+import {
+  createAuthGateway,
+  createEmployeeRepository,
+  isKeycloakAuthProvider,
+} from "@/src/infrastructure/repositoryFactory";
 import { TutorialStepper } from "./TutorialStepper";
 
 export const metadata = { title: "使い方ガイド | nagomi" };
 
 export default async function TutorialPage() {
-  const serverClient = await createSupabaseServerClient();
-  const { data } = await serverClient.auth.getUser();
-  if (!data.user) redirect("/login");
+  const authUserId = await (await createAuthGateway()).getAuthUserId();
+  if (!authUserId) redirect("/login");
 
-  const employee = await createEmployeeRepository().findByAuthUserId(data.user.id);
+  const employee = await createEmployeeRepository().findByAuthUserId(authUserId);
 
   if (!employee) redirect("/login");
-  if (employee.consentAcceptedAt === undefined) redirect("/onboarding/pin");
+  if (employee.consentAcceptedAt === undefined) {
+    redirect(isKeycloakAuthProvider() ? "/onboarding/consent" : "/onboarding/pin");
+  }
 
   const isFirstTime = employee.tutorialCompletedAt === undefined;
 

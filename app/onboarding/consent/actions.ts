@@ -2,8 +2,10 @@
 
 import { redirect } from "next/navigation";
 import { AcceptConsent } from "@/src/application/use-cases/AcceptConsent";
-import { createEmployeeRepository } from "@/src/infrastructure/repositoryFactory";
-import { createSupabaseServerClient } from "@/src/infrastructure/supabase/serverClient";
+import {
+  createAuthGateway,
+  createEmployeeRepository,
+} from "@/src/infrastructure/repositoryFactory";
 
 export type ConsentState = {
   errorMessage: string | undefined;
@@ -13,12 +15,11 @@ export async function consentAction(
   _prev: ConsentState,
   formData: FormData
 ): Promise<ConsentState> {
-  const serverClient = await createSupabaseServerClient();
-  const { data } = await serverClient.auth.getUser();
-  if (!data.user) redirect("/login");
+  const authUserId = await (await createAuthGateway()).getAuthUserId();
+  if (!authUserId) redirect("/login");
 
   const result = await new AcceptConsent(createEmployeeRepository()).execute({
-    authUserId: data.user.id,
+    authUserId,
     agreed: formData.get("agreed") === "true",
   });
 
