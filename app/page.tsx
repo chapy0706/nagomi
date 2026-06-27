@@ -13,7 +13,7 @@ export default async function Home() {
   }
 
   return (
-    <main className="w-screen h-screen overflow-hidden">
+    <main className="w-full h-dvh overflow-hidden">
       <FloorCanvas
         authUserId={authUserId}
         selfEmployeeId={employee.employeeId}

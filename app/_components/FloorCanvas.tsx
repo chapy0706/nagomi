@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useEffect, useMemo } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AvatarMarker } from "@/app/_components/AvatarMarker";
 import { IncomingInvitationModal } from "@/app/_components/IncomingInvitationModal";
 import { InvitationModal } from "@/app/_components/InvitationModal";
@@ -55,6 +55,25 @@ export function FloorCanvas({
   const supabase = useMemo(() => createSupabaseBrowserClient(), []);
   const gateway = useMemo(() => createPresenceGateway(supabase), [supabase]);
   const floor = useMemo(() => buildFloor(DEFAULT_FLOOR_LAYOUT), []);
+
+  // フロアは固定の論理座標（1000×800）。他参加者と共有する座標系は変えず、
+  // 表示だけ端末サイズに合わせて contain で拡大縮小する（全体を常に画面内に収める）。
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [scale, setScale] = useState(1);
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    const update = () => {
+      const w = el.clientWidth;
+      const h = el.clientHeight;
+      if (w === 0 || h === 0) return;
+      setScale(Math.min(w / FLOOR_WIDTH, h / FLOOR_HEIGHT));
+    };
+    update();
+    const ro = new ResizeObserver(update);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
 
   const meetingRoomIds = useMemo(() => floor.meetingRooms.map((r) => r.id), [floor]);
 
@@ -127,14 +146,16 @@ export function FloorCanvas({
     }
   }, [participantCountsByRoom, meetingRoomIds, beginSession, endSession]);
 
+  // getBoundingClientRect は scale 適用後（見た目）の矩形を返すため、
+  // クリック位置を scale で割り戻して論理座標（1000×800 空間）に変換する。
   const handleFloorClick = useCallback(
     (e: React.MouseEvent<HTMLDivElement>) => {
       const rect = e.currentTarget.getBoundingClientRect();
-      const x = e.clientX - rect.left + e.currentTarget.scrollLeft;
-      const y = e.clientY - rect.top + e.currentTarget.scrollTop;
+      const x = (e.clientX - rect.left) / scale;
+      const y = (e.clientY - rect.top) / scale;
       move(x, y);
     },
-    [move]
+    [move, scale]
   );
 
   const handleTouchEnd = useCallback(
@@ -142,11 +163,11 @@ export function FloorCanvas({
       const touch = e.changedTouches[0];
       if (!touch) return;
       const rect = e.currentTarget.getBoundingClientRect();
-      const x = touch.clientX - rect.left + e.currentTarget.scrollLeft;
-      const y = touch.clientY - rect.top + e.currentTarget.scrollTop;
+      const x = (touch.clientX - rect.left) / scale;
+      const y = (touch.clientY - rect.top) / scale;
       move(x, y);
     },
-    [move]
+    [move, scale]
   );
 
   const handleRoomClick = useCallback(
@@ -216,76 +237,88 @@ export function FloorCanvas({
         </Link>
       </div>
 
-      <div className="overflow-auto flex-1 relative">
-        <div
-          role="application"
-          aria-label="フロアマップ（クリックまたは矢印キーで移動）"
-          className="relative bg-gray-100 cursor-pointer"
-          style={{ width: FLOOR_WIDTH, height: FLOOR_HEIGHT }}
-          onClick={handleFloorClick}
-          onKeyDown={() => {}}
-          onTouchEnd={handleTouchEnd}
-        >
-          {floor.meetingRooms.map((room) => (
-            <button
-              key={room.id}
-              type="button"
-              className="absolute cursor-pointer"
+      <div ref={containerRef} className="flex-1 relative overflow-hidden bg-gray-200">
+        <div className="absolute inset-0 flex items-center justify-center">
+          <div
+            className="relative"
+            style={{ width: FLOOR_WIDTH * scale, height: FLOOR_HEIGHT * scale }}
+          >
+            <div
+              role="application"
+              aria-label="フロアマップ（クリックまたは矢印キーで移動）"
+              className="absolute top-0 left-0 bg-gray-100 cursor-pointer"
               style={{
-                left: room.position.x - ROOM_W / 2,
-                top: room.position.y - ROOM_H / 2,
-                width: ROOM_W,
-                height: ROOM_H,
+                width: FLOOR_WIDTH,
+                height: FLOOR_HEIGHT,
+                transform: `scale(${scale})`,
+                transformOrigin: "top left",
               }}
-              onClick={(e) => handleRoomClick(e, room.id)}
-              aria-label={`${TOPIC_ROOM_LABELS[room.topic]}に入室`}
+              onClick={handleFloorClick}
+              onKeyDown={() => {}}
+              onTouchEnd={handleTouchEnd}
             >
-              <RoomBadge
-                roomId={room.id}
-                topic={room.topic}
-                participantCount={participantCountsByRoom.get(room.id) ?? 0}
-                capacityMax={room.capacity.max}
-              />
-            </button>
-          ))}
+              {floor.meetingRooms.map((room) => (
+                <button
+                  key={room.id}
+                  type="button"
+                  className="absolute cursor-pointer"
+                  style={{
+                    left: room.position.x - ROOM_W / 2,
+                    top: room.position.y - ROOM_H / 2,
+                    width: ROOM_W,
+                    height: ROOM_H,
+                  }}
+                  onClick={(e) => handleRoomClick(e, room.id)}
+                  aria-label={`${TOPIC_ROOM_LABELS[room.topic]}に入室`}
+                >
+                  <RoomBadge
+                    roomId={room.id}
+                    topic={room.topic}
+                    participantCount={participantCountsByRoom.get(room.id) ?? 0}
+                    capacityMax={room.capacity.max}
+                  />
+                </button>
+              ))}
 
-          {othersPresences.map((p) => (
-            <AvatarMarker
-              key={p.employeeId}
-              employeeId={p.employeeId}
-              displayName={p.displayName}
-              avatarUrl={p.avatarUrl}
-              x={p.x}
-              y={p.y}
-              status={p.status}
-              isBlocked={p.authUserId ? blockedAuthIds.has(p.authUserId) : false}
-              onClick={
-                p.authUserId
-                  ? () =>
-                      openInvitation({
-                        employeeId: p.employeeId,
-                        displayName: p.displayName,
-                        avatarUrl: p.avatarUrl,
-                        authUserId: p.authUserId as string,
-                        status: p.status,
-                      })
-                  : undefined
-              }
-            />
-          ))}
+              {othersPresences.map((p) => (
+                <AvatarMarker
+                  key={p.employeeId}
+                  employeeId={p.employeeId}
+                  displayName={p.displayName}
+                  avatarUrl={p.avatarUrl}
+                  x={p.x}
+                  y={p.y}
+                  status={p.status}
+                  isBlocked={p.authUserId ? blockedAuthIds.has(p.authUserId) : false}
+                  onClick={
+                    p.authUserId
+                      ? () =>
+                          openInvitation({
+                            employeeId: p.employeeId,
+                            displayName: p.displayName,
+                            avatarUrl: p.avatarUrl,
+                            authUserId: p.authUserId as string,
+                            status: p.status,
+                          })
+                      : undefined
+                  }
+                />
+              ))}
 
-          {selfPosition && (
-            <AvatarMarker
-              key={selfEmployeeId}
-              employeeId={selfEmployeeId}
-              displayName={selfDisplayName}
-              avatarUrl={selfAvatarUrl}
-              x={selfPosition.x}
-              y={selfPosition.y}
-              status={selfStatus}
-              isSelf
-            />
-          )}
+              {selfPosition && (
+                <AvatarMarker
+                  key={selfEmployeeId}
+                  employeeId={selfEmployeeId}
+                  displayName={selfDisplayName}
+                  avatarUrl={selfAvatarUrl}
+                  x={selfPosition.x}
+                  y={selfPosition.y}
+                  status={selfStatus}
+                  isSelf
+                />
+              )}
+            </div>
+          </div>
         </div>
 
         <VideoOverlay authUserId={authUserId} displayName={selfDisplayName} />
