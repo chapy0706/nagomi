@@ -180,3 +180,17 @@ export const deletionAuditLogs = pgTable("deletion_audit_logs", {
   deletedCount: integer("deleted_count").notNull(),
   retentionMonths: integer("retention_months").notNull(),
 });
+
+// -----------------------------------------------
+// keycloak_refresh_tokens（サーバー側限定・状態テーブル）
+// 案A-1: nagomi-ws の WS 接続用 access token を必要時に取得するため、
+// Keycloak の refresh_token を保管する。cookie / session JWT には載せない
+// （4KB 問題と漏洩面の回避）。access_token は保持しない（都度 refresh で取得）。
+// ログ系ではない状態テーブルのため UPDATE / DELETE を許容する
+// （後ログイン勝ちの upsert・ログアウト時の削除）。
+// -----------------------------------------------
+export const keycloakRefreshTokens = pgTable("keycloak_refresh_tokens", {
+  authUserId: uuid("auth_user_id").primaryKey(),
+  refreshToken: text("refresh_token").notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+});

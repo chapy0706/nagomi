@@ -13,6 +13,7 @@
 import NextAuth from "next-auth";
 import { createEmployeeRepository } from "@/src/infrastructure/repositoryFactory";
 import { authConfig } from "./auth.config";
+import { deleteRefreshToken, saveRefreshToken } from "./refreshTokenStore";
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
   ...authConfig,
@@ -43,11 +44,27 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
     // に載る id が食い違い /login ループになる。カスタムクレームは Auth.js が触らない
     // ため、ここに profile.sub を保存して session 側でこれを読む（auth.config.ts）。
     // profile は初回サインイン時のみ存在し、以降は JWT 内の keycloakSub が保持される。
-    jwt({ token, profile }) {
+    //
+    // 案A-1: 初回サインイン時のみ account が渡る。Keycloak の refresh_token を
+    // Postgres に保管し、WS 接続用 access token を後で refresh から取得できるように
+    // する。access_token / refresh_token は cookie（JWT）には載せない。
+    async jwt({ token, profile, account }) {
       if (profile && typeof profile.sub === "string") {
         token.keycloakSub = profile.sub;
       }
+      if (account?.refresh_token && typeof token.keycloakSub === "string") {
+        await saveRefreshToken(token.keycloakSub, account.refresh_token);
+      }
       return token;
+    },
+  },
+  events: {
+    // ログアウト時に保管済み refresh_token を破棄する（漏洩面の最小化）。
+    // JWT 戦略では signOut イベントに { token } が渡る。
+    async signOut(message) {
+      const token = "token" in message ? message.token : undefined;
+      const sub = token && typeof token.keycloakSub === "string" ? token.keycloakSub : undefined;
+      if (sub) await deleteRefreshToken(sub);
     },
   },
 });
