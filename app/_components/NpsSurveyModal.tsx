@@ -2,7 +2,8 @@
 
 import { useActionState, useEffect, useState } from "react";
 import { markNpsSurveyShown } from "@/app/_lib/surveySchedule";
-import { SATISFACTION_INITIAL_STATE, submitSatisfactionAction } from "@/app/actions/satisfaction";
+import { submitSatisfactionAction } from "@/app/actions/satisfaction";
+import { SATISFACTION_INITIAL_STATE } from "@/app/actions/satisfactionState";
 
 type Props = {
   onClose: () => void;

@@ -5,15 +5,7 @@ import { SubmitSatisfactionResponse } from "@/src/application/use-cases/SubmitSa
 import { createSatisfactionResponseGateway } from "@/src/infrastructure/repositoryFactory";
 import { SystemClock } from "@/src/infrastructure/SystemClock";
 import { createSupabaseServerClient } from "@/src/infrastructure/supabase/serverClient";
-
-export type SatisfactionActionState = {
-  success: boolean | undefined;
-  errorMessage: string | undefined;
-};
-
-const INITIAL_STATE: SatisfactionActionState = { success: undefined, errorMessage: undefined };
-
-export { INITIAL_STATE as SATISFACTION_INITIAL_STATE };
+import type { SatisfactionActionState } from "./satisfactionState";
 
 export async function submitSatisfactionAction(
   _prev: SatisfactionActionState,
