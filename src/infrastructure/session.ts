@@ -72,3 +72,21 @@ export async function getSessionContext(): Promise<SessionContext> {
     },
   };
 }
+
+/// Server Action / API から使う、プロバイダ非依存の「自己」認証ユーザーID解決。
+///
+/// createAuthGateway 経由のため AUTH_PROVIDER（keycloak / supabase）の切替・切り戻しを保つ。
+/// 認証チェックの知識をこの1箇所に集約し、各 action は認証方式を知らずに済む（関心の分離）。
+/// これにより「一部 action だけ未移行」という移行漏れが構造的に起きなくなる。
+export async function getAuthenticatedUserId(): Promise<string | undefined> {
+  const authGateway = await createAuthGateway();
+  return authGateway.getAuthUserId();
+}
+
+/// 認証必須の Server Action / RSC 用。未認証なら /login へリダイレクトする。
+/// （API Route は Response を返す必要があるため getAuthenticatedUserId を使い自前で 401 にする）
+export async function getAuthUserIdOrRedirect(): Promise<string> {
+  const authUserId = await getAuthenticatedUserId();
+  if (!authUserId) redirect("/login");
+  return authUserId;
+}

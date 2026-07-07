@@ -1,6 +1,5 @@
 "use server";
 
-import { redirect } from "next/navigation";
 import { SubmitReport } from "@/src/application/use-cases/SubmitReport";
 import { REPORT_CATEGORIES, type ReportCategory } from "@/src/domain/entities/Report";
 import {
@@ -8,7 +7,7 @@ import {
   createReportGateway,
 } from "@/src/infrastructure/repositoryFactory";
 import { SystemClock } from "@/src/infrastructure/SystemClock";
-import { createSupabaseServerClient } from "@/src/infrastructure/supabase/serverClient";
+import { getAuthUserIdOrRedirect } from "@/src/infrastructure/session";
 
 export type ReportActionState = {
   success: boolean | undefined;
@@ -19,9 +18,7 @@ export async function submitReportAction(
   _prev: ReportActionState,
   formData: FormData
 ): Promise<ReportActionState> {
-  const serverClient = await createSupabaseServerClient();
-  const { data: authData } = await serverClient.auth.getUser();
-  if (!authData.user) redirect("/login");
+  await getAuthUserIdOrRedirect();
 
   const reportedAuthUserId = formData.get("reportedAuthUserId");
   const category = formData.get("category");

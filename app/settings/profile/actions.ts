@@ -1,31 +1,23 @@
 "use server";
 
-import { redirect } from "next/navigation";
 import { UpdateDisplayName } from "@/src/application/use-cases/UpdateDisplayName";
 import { UploadAvatarImage } from "@/src/application/use-cases/UploadAvatarImage";
 import {
   createEmployeeRepository,
   createStorageGateway,
 } from "@/src/infrastructure/repositoryFactory";
-import { createSupabaseServerClient } from "@/src/infrastructure/supabase/serverClient";
+import { getAuthUserIdOrRedirect } from "@/src/infrastructure/session";
 
 export type ProfileActionState = {
   errorMessage: string | undefined;
   successMessage: string | undefined;
 };
 
-async function getAuthUserId(): Promise<string> {
-  const client = await createSupabaseServerClient();
-  const { data } = await client.auth.getUser();
-  if (!data.user) redirect("/login");
-  return data.user.id;
-}
-
 export async function updateDisplayNameAction(
   _prev: ProfileActionState,
   formData: FormData
 ): Promise<ProfileActionState> {
-  const authUserId = await getAuthUserId();
+  const authUserId = await getAuthUserIdOrRedirect();
 
   const result = await new UpdateDisplayName(createEmployeeRepository()).execute({
     authUserId,
@@ -42,7 +34,7 @@ export async function uploadAvatarAction(
   _prev: ProfileActionState,
   formData: FormData
 ): Promise<ProfileActionState> {
-  const authUserId = await getAuthUserId();
+  const authUserId = await getAuthUserIdOrRedirect();
 
   const file = formData.get("avatar");
   if (!(file instanceof Blob) || file.size === 0) {

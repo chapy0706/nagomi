@@ -1,19 +1,16 @@
 "use server";
 
-import { redirect } from "next/navigation";
 import { SubmitSatisfactionResponse } from "@/src/application/use-cases/SubmitSatisfactionResponse";
 import { createSatisfactionResponseGateway } from "@/src/infrastructure/repositoryFactory";
 import { SystemClock } from "@/src/infrastructure/SystemClock";
-import { createSupabaseServerClient } from "@/src/infrastructure/supabase/serverClient";
+import { getAuthUserIdOrRedirect } from "@/src/infrastructure/session";
 import type { SatisfactionActionState } from "./satisfactionState";
 
 export async function submitSatisfactionAction(
   _prev: SatisfactionActionState,
   formData: FormData
 ): Promise<SatisfactionActionState> {
-  const serverClient = await createSupabaseServerClient();
-  const { data: authData } = await serverClient.auth.getUser();
-  if (!authData.user) redirect("/login");
+  await getAuthUserIdOrRedirect();
 
   const type = formData.get("type");
   const comment = formData.get("comment");

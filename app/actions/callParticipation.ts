@@ -5,28 +5,22 @@ import { RecordCallLeave } from "@/src/application/use-cases/RecordCallLeave";
 import type { CallTopicKind } from "@/src/domain/value-objects/CallTopic";
 import { createCallParticipationRepository } from "@/src/infrastructure/repositoryFactory";
 import { SystemClock } from "@/src/infrastructure/SystemClock";
-import { createSupabaseServerClient } from "@/src/infrastructure/supabase/serverClient";
+import { getAuthenticatedUserId } from "@/src/infrastructure/session";
 
 export async function recordCallJoinAction(roomId: string, topic: CallTopicKind): Promise<void> {
-  const serverClient = await createSupabaseServerClient();
-  const {
-    data: { user },
-  } = await serverClient.auth.getUser();
-  if (!user) return;
+  const authUserId = await getAuthenticatedUserId();
+  if (!authUserId) return;
 
   await new RecordCallJoin(createCallParticipationRepository(), SystemClock).execute({
-    employeeAuthId: user.id,
+    employeeAuthId: authUserId,
     roomId,
     topic,
   });
 }
 
 export async function recordCallLeaveAction(): Promise<void> {
-  const serverClient = await createSupabaseServerClient();
-  const {
-    data: { user },
-  } = await serverClient.auth.getUser();
-  if (!user) return;
+  const authUserId = await getAuthenticatedUserId();
+  if (!authUserId) return;
 
-  await new RecordCallLeave(createCallParticipationRepository(), SystemClock).execute(user.id);
+  await new RecordCallLeave(createCallParticipationRepository(), SystemClock).execute(authUserId);
 }

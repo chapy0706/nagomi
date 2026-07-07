@@ -1,6 +1,5 @@
 "use server";
 
-import { redirect } from "next/navigation";
 import { AcceptCallInvitation } from "@/src/application/use-cases/AcceptCallInvitation";
 import { DeclineCallInvitation } from "@/src/application/use-cases/DeclineCallInvitation";
 import { IssueCallInvitation } from "@/src/application/use-cases/IssueCallInvitation";
@@ -17,7 +16,7 @@ import {
   createCallInvitationRepository,
 } from "@/src/infrastructure/repositoryFactory";
 import { SystemClock } from "@/src/infrastructure/SystemClock";
-import { createSupabaseServerClient } from "@/src/infrastructure/supabase/serverClient";
+import { getAuthUserIdOrRedirect } from "@/src/infrastructure/session";
 
 /// WS broadcast はクライアント側で行うため、サーバーアクション内では noop ゲートウェイを使う
 class NoopBroadcastGateway implements InvitationBroadcastGateway {
@@ -40,13 +39,6 @@ class NoopBroadcastGateway implements InvitationBroadcastGateway {
   }
 }
 
-async function getAuthUserId(): Promise<string> {
-  const client = await createSupabaseServerClient();
-  const { data } = await client.auth.getUser();
-  if (!data.user) redirect("/login");
-  return data.user.id;
-}
-
 export type IssueCallInvitationActionInput = {
   inviterAuthId: string;
   inviterDisplayName: string;
@@ -66,7 +58,7 @@ export type IssueCallInvitationActionResult =
 export async function issueCallInvitationAction(
   input: IssueCallInvitationActionInput
 ): Promise<IssueCallInvitationActionResult> {
-  const authUserId = await getAuthUserId();
+  const authUserId = await getAuthUserIdOrRedirect();
   if (authUserId !== input.inviterAuthId) {
     return { success: false, reason: "unauthorized" };
   }
@@ -97,7 +89,7 @@ export async function acceptCallInvitationAction(input: {
   inviterAuthId: string;
   expiresAt: Date;
 }): Promise<AcceptCallInvitationActionResult> {
-  await getAuthUserId();
+  await getAuthUserIdOrRedirect();
 
   const useCase = new AcceptCallInvitation(
     createCallInvitationRepository(),
@@ -109,6 +101,6 @@ export async function acceptCallInvitationAction(input: {
 }
 
 export async function declineCallInvitationAction(input: { invitationId: string }): Promise<void> {
-  await getAuthUserId();
+  await getAuthUserIdOrRedirect();
   await new DeclineCallInvitation(createCallInvitationRepository()).execute(input);
 }

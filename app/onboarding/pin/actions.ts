@@ -10,6 +10,10 @@ export type ChangePinState = {
   errorMessage: string | undefined;
 };
 
+// 注: PIN（= Supabase パスワード）変更は Supabase モード専用。
+// Keycloak モードでは pin ページ（page.tsx）が isKeycloakAuthProvider() で
+// /onboarding/consent に退避するため、この action には到達しない。
+// したがって認可を agnostic 化せず、あえて Supabase 認証のまま残す（ADR-010）。
 export async function changePinAction(
   _prev: ChangePinState,
   formData: FormData
