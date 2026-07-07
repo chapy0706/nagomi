@@ -35,17 +35,19 @@ export function middleware(request: NextRequest) {
   // 秘匿情報を出さないため cookie は「名前のみ」を出す（値＝トークンは絶対に出さない）。
   const isPublic = isPublicPath(pathname);
   const hasSession = hasAuthjsSession(request);
+  // cookie は「名前」と「値の長さ（数値）」のみ出す（値＝トークンは絶対に出さない）。
+  // 長さで >4KB 超過やチャンク分割（.0/.1）の齟齬を検知する。
   const authjsCookies = request.cookies
     .getAll()
-    .map((c) => c.name)
-    .filter((name) => name.includes("authjs"));
+    .filter((c) => c.name.includes("authjs"))
+    .map((c) => ({ name: c.name, len: c.value.length }));
   console.log(
     "[middleware]",
     JSON.stringify({
       path: pathname,
       isPublic,
       hasAuthjsSession: hasSession,
-      authjsCookieNames: authjsCookies,
+      authjsCookies,
       // Edge から見えるか（見えなければ null。層3の env 非インライン問題の確認用）
       envAuthProvider: process.env.AUTH_PROVIDER ?? null,
       envAuthDebug: process.env.AUTH_DEBUG ?? null,

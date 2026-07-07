@@ -67,6 +67,17 @@ export const authConfig = {
       if (sub) {
         session.user.id = sub;
       }
+      // TEMP: セッション持続調査（原因特定後に削除）。値は出さず有無だけ。
+      // session コールバックが呼ばれた＝cookie を復号できている。呼ばれた上で
+      // keycloakSubPresent=false なら jwt 側の保持漏れ、そもそも呼ばれないなら復号失敗。
+      console.log(
+        "[auth.session]",
+        JSON.stringify({
+          keycloakSubPresent: Boolean(keycloakSub),
+          hasSub: Boolean(token.sub),
+          userIdSet: Boolean(sub),
+        })
+      );
       return session;
     },
   },
