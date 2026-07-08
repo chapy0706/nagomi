@@ -15,11 +15,6 @@ import { createEmployeeRepository } from "@/src/infrastructure/repositoryFactory
 import { authConfig } from "./auth.config";
 import { deleteRefreshToken, saveRefreshToken } from "./refreshTokenStore";
 
-// TEMP: セッション持続調査用（原因特定後に削除する）。
-// プロセス起動ごとに一意。複数コンテナにロードバランスされているか
-// （= AUTH_SECRET 不一致で cookie が復号できず破棄される疑い）を可視化する。
-const INSTANCE_ID = Math.random().toString(36).slice(2, 8);
-
 export const { handlers, signIn, signOut, auth } = NextAuth({
   ...authConfig,
   callbacks: {
@@ -60,19 +55,6 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       if (account?.refresh_token && typeof token.keycloakSub === "string") {
         await saveRefreshToken(token.keycloakSub, account.refresh_token);
       }
-      // TEMP: セッション持続調査（原因特定後に削除）。値は出さず有無だけ。
-      // account/profile 無し かつ keycloakSubPresent=false の「新規トークン」が
-      // セッション途中で現れたら = 前の cookie を復号できていない（AUTH_SECRET 不一致）。
-      console.log(
-        "[auth.jwt]",
-        JSON.stringify({
-          instance: INSTANCE_ID,
-          hasAccount: Boolean(account),
-          hasProfile: Boolean(profile),
-          keycloakSubPresent: typeof token.keycloakSub === "string",
-          tokenKeys: Object.keys(token),
-        })
-      );
       return token;
     },
   },
