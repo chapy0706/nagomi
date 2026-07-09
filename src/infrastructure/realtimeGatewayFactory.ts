@@ -24,21 +24,21 @@ function isWebSocketProvider(): boolean {
 
 export function createPresenceGateway(supabase: SupabaseClient): PresenceGateway {
   if (isWebSocketProvider()) {
-    return new WebSocketPresenceGateway(getWebSocketClient(supabase));
+    return new WebSocketPresenceGateway(getWebSocketClient());
   }
   return new SupabasePresenceGateway(supabase);
 }
 
 export function createInvitationGateway(supabase: SupabaseClient): InvitationBroadcastGateway {
   if (isWebSocketProvider()) {
-    return new WebSocketInvitationBroadcastGateway(getWebSocketClient(supabase));
+    return new WebSocketInvitationBroadcastGateway(getWebSocketClient());
   }
   return new SupabaseInvitationBroadcastGateway(supabase);
 }
 
 export function createRoomActivityGateway(supabase: SupabaseClient): RoomActivityGateway {
   if (isWebSocketProvider()) {
-    return new WebSocketRoomActivityGateway(getWebSocketClient(supabase));
+    return new WebSocketRoomActivityGateway(getWebSocketClient());
   }
   return new SupabaseRoomActivityGateway(supabase);
 }

@@ -3,10 +3,11 @@
 /// 設計上の選択:
 ///   - 1ページセッション = 1接続。複数ゲートウェイが同一接続を共有する
 ///   - 切断時は指数バックオフで再接続（最大 30 秒間隔）
-///   - JWT 更新時（onAuthStateChange）は再接続して新トークンで認証
-///   - Supabase クライアントはトークン取得のためだけに使う（選択インターフェース）
+///   - 接続用トークンは本体の /api/ws-token から取得する（案A-1）。
+///     refresh_token はサーバー側に留まり、ブラウザには access token だけが渡る。
+///   - 「接続時に一度だけ検証」方式。接続中の access token 失効は接続の信頼で吸収し、
+///     再接続時に新しいトークンを取り直して再検証する。
 
-import type { SupabaseClient } from "@supabase/supabase-js";
 import type { ClientMessage, ServerMessage, ServerMessageType } from "./types";
 
 type Listener<T extends ServerMessage> = (msg: T) => void;
@@ -19,36 +20,15 @@ const RECONNECT_MAX_MS = 30_000;
 
 export class WebSocketClient {
   private ws: WebSocket | undefined;
-  private token: string | undefined;
   private reconnectAttempt = 0;
   private reconnectTimer: ReturnType<typeof setTimeout> | undefined;
   private closed = false;
   private readonly listeners: ListenerMap = {};
 
-  constructor(
-    private readonly url: string,
-    private readonly supabase: SupabaseClient
-  ) {}
+  constructor(private readonly url: string) {}
 
   async connect(): Promise<void> {
-    const {
-      data: { session },
-    } = await this.supabase.auth.getSession();
-    if (!session) return;
-    this.token = session.access_token;
-
-    // JWT 更新時に再接続して新トークンで認証
-    this.supabase.auth.onAuthStateChange((event, newSession) => {
-      if (event === "TOKEN_REFRESHED" && newSession) {
-        this.token = newSession.access_token;
-        this.reconnect();
-      }
-      if (event === "SIGNED_OUT") {
-        this.disconnect();
-      }
-    });
-
-    this.doConnect();
+    await this.doConnect();
   }
 
   send(msg: ClientMessage): void {
@@ -80,10 +60,36 @@ export class WebSocketClient {
     this.ws = undefined;
   }
 
-  private doConnect(): void {
-    if (this.closed || !this.token) return;
+  /// WS 接続用トークンを本体エンドポイント（/api/ws-token）から取得する。
+  /// 失敗（未認証・失効・一時障害）は undefined を返し、呼び出し側で再試行する。
+  private async fetchToken(): Promise<string | undefined> {
+    try {
+      const res = await fetch("/api/ws-token", { cache: "no-store" });
+      if (!res.ok) return undefined;
+      const data: unknown = await res.json();
+      if (typeof data === "object" && data !== null && "access_token" in data) {
+        const token = (data as { access_token: unknown }).access_token;
+        return typeof token === "string" ? token : undefined;
+      }
+      return undefined;
+    } catch {
+      return undefined;
+    }
+  }
 
-    const fullUrl = `${this.url}?token=${encodeURIComponent(this.token)}`;
+  private async doConnect(): Promise<void> {
+    if (this.closed) return;
+
+    // 接続直前に毎回トークンを取り直す（再接続時の再検証を兼ねる）。
+    const token = await this.fetchToken();
+    if (this.closed) return;
+    if (!token) {
+      // トークンが取れない → 接続せず、バックオフで再試行する。
+      this.scheduleReconnect();
+      return;
+    }
+
+    const fullUrl = `${this.url}?token=${encodeURIComponent(token)}`;
     const ws = new WebSocket(fullUrl);
 
     ws.onopen = () => {
@@ -113,15 +119,10 @@ export class WebSocketClient {
     this.ws = ws;
   }
 
-  private reconnect(): void {
-    this.ws?.close();
-    this.doConnect();
-  }
-
   private scheduleReconnect(): void {
     const delay = Math.min(RECONNECT_BASE_MS * 2 ** this.reconnectAttempt, RECONNECT_MAX_MS);
     this.reconnectAttempt += 1;
-    this.reconnectTimer = setTimeout(() => this.doConnect(), delay);
+    this.reconnectTimer = setTimeout(() => void this.doConnect(), delay);
   }
 
   private dispatch(msg: ServerMessage): void {
@@ -140,10 +141,10 @@ export class WebSocketClient {
 
 let _instance: WebSocketClient | undefined;
 
-export function getWebSocketClient(supabase: SupabaseClient): WebSocketClient {
+export function getWebSocketClient(): WebSocketClient {
   if (!_instance) {
     const wsUrl = process.env.NEXT_PUBLIC_WS_URL ?? "ws://localhost:3001/ws";
-    _instance = new WebSocketClient(wsUrl, supabase);
+    _instance = new WebSocketClient(wsUrl);
     _instance.connect().catch((err) => console.error("[WebSocketClient] connect failed:", err));
   }
   return _instance;

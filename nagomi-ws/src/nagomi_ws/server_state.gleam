@@ -6,6 +6,7 @@
 import gleam/erlang/process.{type Subject}
 import nagomi_ws/connection_registry
 import nagomi_ws/invitation_router
+import nagomi_ws/key_cache
 import nagomi_ws/presence_registry
 import nagomi_ws/room_activity_router
 
@@ -15,5 +16,7 @@ pub type ServerState {
     presence_registry: Subject(presence_registry.Message),
     invitation_router: Subject(invitation_router.Message),
     room_activity_router: Subject(room_activity_router.Message),
+    // JWKS 公開鍵キャッシュ（RS256 検証で kid → 公開鍵 を引く）
+    key_cache: Subject(key_cache.Message),
   )
 }

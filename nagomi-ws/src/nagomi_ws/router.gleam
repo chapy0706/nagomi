@@ -23,6 +23,7 @@ import gleam/result
 import gleam/uri
 import mist.{type Connection, type ResponseData}
 import nagomi_ws/jwt
+import nagomi_ws/key_cache
 import nagomi_ws/server_state.{type ServerState}
 import nagomi_ws/ws_handler
 
@@ -48,12 +49,7 @@ fn handle_websocket(
   server: ServerState,
   req: Request(Connection),
 ) -> response.Response(ResponseData) {
-  let jwt_secret = case envoy.get("JWT_SECRET") {
-    Ok(s) -> s
-    Error(_) -> ""
-  }
-
-  // WS_AUTH_DISABLED=true のときだけ検証スキップ。デフォルトは検証あり。
+  // WS_AUTH_DISABLED=true のときだけ検証スキップ。デフォルトは検証あり（deny 側）。
   let auth_disabled = envoy.get("WS_AUTH_DISABLED") == Ok("true")
 
   let token_result = case auth_disabled {
@@ -68,7 +64,7 @@ fn handle_websocket(
         Error(_) -> Ok("auth-disabled-anon")
       }
     }
-    False -> get_token(req, jwt_secret)
+    False -> verify_token_rs256(server, req)
   }
 
   mist.websocket(
@@ -100,16 +96,62 @@ fn extract_token_string(req: Request(Connection)) -> Result(String, String) {
   |> result.map_error(fn(_) { "token not found" })
 }
 
-/// トークン文字列を取り出し、JWT_SECRET で署名を検証して sub を返す
-fn get_token(
+/// トークンを取り出し、Keアカウント発行 JWT を RS256/JWKS で検証して sub を返す。
+///
+/// 流れ: token 取得 → header の kid で公開鍵をキャッシュから引く → RS256 署名検証。
+/// いずれかの失敗はすべて Error（= 呼び出し側で deny）。
+/// 各判断点に gated debug ログ（WS_DEBUG=true のときのみ出力）を仕込む。
+fn verify_token_rs256(
+  server: ServerState,
   req: Request(Connection),
-  jwt_secret: String,
 ) -> Result(String, String) {
   use token <- result.try(extract_token_string(req))
+  use header <- result.try(jwt.peek_header(token))
+  debug_log("kid=" <> header.kid <> " alg=" <> header.alg)
 
-  case jwt_secret {
-    // JWT_SECRET 未設定（ローカル開発環境）: 検証スキップ
-    "" -> jwt.extract_without_verify(token)
-    secret -> jwt.verify_and_extract(token, secret)
+  case key_cache.get_key(server.key_cache, header.kid) {
+    Error(reason) -> {
+      debug_log("key lookup failed: " <> reason)
+      Error(reason)
+    }
+    Ok(jwk) ->
+      case jwt.verify_rs256(token, jwk, claim_expectations()) {
+        Ok(sub) -> {
+          debug_log("verified (signature + claims) ok")
+          Ok(sub)
+        }
+        Error(reason) -> {
+          debug_log("verify failed: " <> reason)
+          Error(reason)
+        }
+      }
+  }
+}
+
+/// クレーム検証の期待値を env から組み立てる。
+/// - KEYCLOAK_ISSUER: 発行者（未設定なら "" となり iss 不一致で deny）
+/// - KEYCLOAK_EXPECTED_AZP: 主関門。既定 nagomi-web
+/// - KEYCLOAK_EXPECTED_AUD: aud に含むべき値。既定 account（Keアカウント既定）。
+///   将来 audience mapper で専用 aud を入れたら env でここを締められる。
+fn claim_expectations() -> jwt.ClaimExpectations {
+  jwt.ClaimExpectations(
+    issuer: env_or("KEYCLOAK_ISSUER", ""),
+    expected_azp: env_or("KEYCLOAK_EXPECTED_AZP", "nagomi-web"),
+    expected_aud: env_or("KEYCLOAK_EXPECTED_AUD", "account"),
+  )
+}
+
+fn env_or(key: String, default: String) -> String {
+  case envoy.get(key) {
+    Ok(value) -> value
+    Error(_) -> default
+  }
+}
+
+/// gated debug ログ。WS_DEBUG=true のときだけ出力する（本番の常時ログ汚染を避ける）。
+fn debug_log(msg: String) -> Nil {
+  case envoy.get("WS_DEBUG") == Ok("true") {
+    True -> io.println("[jwt] " <> msg)
+    False -> Nil
   }
 }

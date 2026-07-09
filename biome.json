@@ -12,6 +12,7 @@
       "!.claude",
       "!.pnpm-store",
       "!drizzle",
+      "!nagomi-ws",
       "!**/*.css"
     ]
   },
