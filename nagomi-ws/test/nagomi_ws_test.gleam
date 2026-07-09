@@ -1,8 +1,8 @@
+import gleam/option
 import gleeunit
 import gleeunit/should
 import nagomi_ws/message.{
-  PresenceJoin, PresenceUpdatePosition, PresenceUpdateStatus, RoomBroadcastActivity,
-  UnknownMessage,
+  PresenceUpdatePosition, PresenceUpdateStatus, UnknownMessage,
 }
 
 pub fn main() {
@@ -89,13 +89,13 @@ pub fn encode_error_test() {
 fn sample_presence() {
   message.PresencePayload(
     employee_id: "emp-1",
-    auth_user_id: gleam/option.Some("auth-1"),
+    auth_user_id: option.Some("auth-1"),
     display_name: "テストユーザー",
-    avatar_url: gleam/option.None,
+    avatar_url: option.None,
     x: 100.0,
     y: 200.0,
     status: message.Available,
-    current_room_id: gleam/option.None,
+    current_room_id: option.None,
   )
 }
 
