@@ -2,6 +2,7 @@ import { sql } from "drizzle-orm";
 import {
   boolean,
   check,
+  index,
   integer,
   jsonb,
   pgTable,
@@ -194,3 +195,22 @@ export const keycloakRefreshTokens = pgTable("keycloak_refresh_tokens", {
   refreshToken: text("refresh_token").notNull(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 });
+
+// -----------------------------------------------
+// presence_sessions（追記のみ。disconnected_at 確定更新のみ例外）
+// WebSocket 接続の技術的事実（フロア在室ウィンドウ）を記録する。
+// 業務的勤怠 attendance_logs とは関心が異なるため分離する
+//（短い切断・再接続を勤怠と混同しないため）。
+// connection_id は nagomi-ws の接続 ID。開始/終了イベントの突合に使う。
+// -----------------------------------------------
+export const presenceSessions = pgTable(
+  "presence_sessions",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    employeeAuthId: uuid("employee_auth_id").notNull(),
+    connectionId: text("connection_id").notNull(),
+    connectedAt: timestamp("connected_at", { withTimezone: true }).notNull().defaultNow(),
+    disconnectedAt: timestamp("disconnected_at", { withTimezone: true }),
+  },
+  (t) => [index("presence_sessions_connection_id_idx").on(t.connectionId)]
+);

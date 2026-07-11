@@ -14,6 +14,7 @@ import type { BlockRepository } from "@/src/domain/ports/BlockRepository";
 import type { CallInvitationRepository } from "@/src/domain/ports/CallInvitationRepository";
 import type { CallParticipationRepository } from "@/src/domain/ports/CallParticipationRepository";
 import type { EmployeeRepository } from "@/src/domain/ports/EmployeeRepository";
+import type { PresenceSessionRepository } from "@/src/domain/ports/PresenceSessionRepository";
 import type { ReportGateway } from "@/src/domain/ports/ReportGateway";
 import type { SatisfactionResponseGateway } from "@/src/domain/ports/SatisfactionResponseGateway";
 import type { StorageGateway } from "@/src/domain/ports/StorageGateway";
@@ -25,6 +26,7 @@ import { PostgresBlockRepository } from "./postgres/PostgresBlockRepository";
 import { PostgresCallInvitationRepository } from "./postgres/PostgresCallInvitationRepository";
 import { PostgresCallParticipationRepository } from "./postgres/PostgresCallParticipationRepository";
 import { PostgresEmployeeRepository } from "./postgres/PostgresEmployeeRepository";
+import { PostgresPresenceSessionRepository } from "./postgres/PostgresPresenceSessionRepository";
 import { PostgresReportGateway } from "./postgres/PostgresReportGateway";
 import { PostgresSatisfactionResponseGateway } from "./postgres/PostgresSatisfactionResponseGateway";
 import { createSupabaseAdminClient } from "./supabase/adminClient";
@@ -84,6 +86,12 @@ export function createCallInvitationRepository(): CallInvitationRepository {
 export function createBlockRepository(): BlockRepository {
   if (isA1()) return new PostgresBlockRepository(getDb());
   return new SupabaseBlockRepository(createSupabaseAdminClient());
+}
+
+/// presence_sessions は a1(Postgres) 専用（Keアカウント/nagomi-ws 経路でのみ使う）。
+/// Supabase 実装は持たない。
+export function createPresenceSessionRepository(): PresenceSessionRepository {
+  return new PostgresPresenceSessionRepository(getDb());
 }
 
 export function createReportGateway(): ReportGateway {

@@ -24,6 +24,7 @@ import nagomi_ws/message.{
 import nagomi_ws/presence_registry
 import nagomi_ws/room_activity_router
 import nagomi_ws/server_state.{type ServerState}
+import nagomi_ws/ws_events
 
 // ---------------------------------------------------------------------------
 // 接続ごとの状態
@@ -75,6 +76,13 @@ pub fn on_open(
 
   let conn_id = gen_conn_id()
 
+  // 認証済み接続だけ在室証跡に記録する（非同期・失敗は ws_events がログに残す）。
+  // 未認証（auth_user_id == ""）は記録しない＝employee_auth_id を有効な sub に保つ。
+  case auth_user_id != "" {
+    True -> ws_events.record_connected(auth_user_id, conn_id)
+    False -> Nil
+  }
+
   // このプロセスへのメールボックス Subject を作り、接続レジストリに登録
   let subject = process.new_subject()
   connection_registry.register(server.connection_registry, conn_id, subject)
@@ -99,6 +107,12 @@ pub fn on_open(
 
 pub fn on_close(state: ConnectionState) -> Nil {
   io.println("[ws_handler] closed: " <> state.conn_id)
+
+  // 開始を記録した接続だけ終了を記録する（匿名接続は対象外）。非同期・失敗はログ。
+  case state.auth_user_id != "" {
+    True -> ws_events.record_disconnected(state.conn_id)
+    False -> Nil
+  }
 
   connection_registry.unregister(state.server.connection_registry, state.conn_id)
 
