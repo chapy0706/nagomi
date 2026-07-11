@@ -3,7 +3,12 @@ import { type NextRequest, NextResponse } from "next/server";
 
 // /login と OIDC エンドポイント（/api/auth/*）は未認証でも通す。
 // /api/auth/callback/keycloak を弾くとログインが成立しないため必須。
-const PUBLIC_PATHS = ["/login", "/api/auth"];
+//
+// /api/ws-events は nagomi-ws からの server-to-server 呼び出しで Cookie を持たない。
+// middleware では通し、認可は route handler 側の共有シークレット
+// （WS_EVENTS_SECRET を Authorization: Bearer + timingSafeEqual で検証）に委ねる。
+// public にしても、シークレットが無ければ 401 で弾かれる（多層防御）。
+const PUBLIC_PATHS = ["/login", "/api/auth", "/api/ws-events"];
 
 function isPublicPath(pathname: string): boolean {
   return PUBLIC_PATHS.some((p) => pathname === p || pathname.startsWith(`${p}/`));
